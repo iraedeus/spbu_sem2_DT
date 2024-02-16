@@ -1,7 +1,7 @@
 [metadata]
-name = "py_template"
-author = "deepvk"
-url = "https://github.com/deepvk/py_template"
+name = "sbpu_sem2"
+author = "mcdanya"
+url = "https://github.com/iraedeus/sbpu_sem2"
 
 [tool.isort]
 profile = "black"
