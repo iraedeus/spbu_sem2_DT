@@ -1,6 +1,6 @@
 import pytest
 
-from src.homework_1.homework_1_1 import *
+from src.homework.homework_1.homework_1_1 import *
 
 dummy_mapping = Registry[Mapping](default=dict)
 dummy_mapping_for_errors = Registry[Mapping]()
