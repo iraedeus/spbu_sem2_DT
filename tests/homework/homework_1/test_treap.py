@@ -2,7 +2,7 @@ from random import randint
 
 import pytest
 
-from src.homework.homework_1.homework_1_2 import *
+from src.homework.homework_1.treap import *
 
 
 def create_test_tree(tree_data):
