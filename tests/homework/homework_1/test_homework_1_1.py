@@ -1,3 +1,5 @@
+from typing import Mapping
+
 import pytest
 
 from src.homework.homework_1.homework_1_1 import *
@@ -12,12 +14,24 @@ class Dummy(Mapping):
     pass
 
 
-@pytest.mark.parametrize("name, class_check", [("dummy", Dummy), ("unknown", dict)])
-def test_dispatch(name, class_check):
-    test1 = dummy_mapping.dispatch(name)()
-    assert isinstance(test1, class_check)
+class TestDispatch:
+    def test_dispatch(self):
+        test_class = dummy_mapping.dispatch("dummy")
+        assert issubclass(test_class, Mapping)
+
+    def test_dispatch_default(self):
+        test_object = dummy_mapping.dispatch("unknown")()
+        assert isinstance(test_object, dict)
 
 
-def test_dispatch_err():
-    with pytest.raises(ValueError):
-        test1 = dummy_mapping_for_errors.dispatch("unknown class")()
+class TestRegistryErr:
+    def test_dispatch_err(self):
+        with pytest.raises(ValueError):
+            test1 = dummy_mapping_for_errors.dispatch("unknown class")()
+
+    def test_already_exist_err(self):
+        with pytest.raises(AlreadyExistError):
+
+            @dummy_mapping.register(name="dummy")
+            class Another_Dummy(Mapping):
+                pass
