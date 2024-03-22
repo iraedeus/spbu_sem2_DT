@@ -1,4 +1,4 @@
-from typing import Callable, Generic, Optional, TypeVar
+from typing import Callable, Generic, Optional, Type, TypeVar
 
 Parent = TypeVar("Parent")
 
@@ -8,23 +8,23 @@ class AlreadyExistError(Exception):
 
 
 class Registry(Generic[Parent]):
-    def __init__(self, default: Optional[Parent] = None) -> None:
-        self.classes: dict[str, "Parent"] = {}
-        self.default = default
+    def __init__(self, default: Optional[Type[Parent]]) -> None:
+        self.classes: dict[str, Type[Parent]] = dict()
+        self.default: Optional[Type[Parent]] = default
 
-    def register(self, name: str) -> Callable:
-        def inner(registered_class: Parent) -> Parent:
+    def register(self, name: str) -> Callable[[Type[Parent]], Type[Parent]]:
+        def inner(cls: Type[Parent]) -> Type[Parent]:
             if name not in self.classes:
-                self.classes[name] = registered_class
-                return registered_class
+                self.classes[name] = cls
+                return cls
             else:
                 raise AlreadyExistError("This name of class already exist in registry")
 
         return inner
 
-    def dispatch(self, name: str) -> Optional[Parent]:
+    def dispatch(self, name: str) -> Type[Parent]:
         if name in self.classes:
-            return self.classes.get(name)
+            return self.classes[name]
         elif self.default is not None:
             return self.default
         else:
@@ -54,7 +54,7 @@ class SomethingElse(ParentClass):
 
 
 if __name__ == "__main__":
-    user_choice = input("Select the class: \n" "Available: AVL, Treap, Smh \n")
+    user_choice = input("Select the class whose object you want to create: \n" "Available: AVL, Treap, Smh \n")
 
     user_class = parent.dispatch(user_choice)
-    print(user_class)
+    print(user_class())

@@ -5,7 +5,7 @@ import pytest
 from src.homework.homework_1.registry import *
 
 dummy_mapping = Registry[Mapping](default=dict)
-dummy_mapping_for_errors = Registry[Mapping]()
+dummy_mapping_for_errors = Registry[Mapping](default=None)
 
 
 @dummy_mapping_for_errors.register(name="sussy_dummy")
