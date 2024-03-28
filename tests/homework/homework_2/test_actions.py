@@ -1,11 +1,17 @@
 import pytest
 
 from src.homework.homework_2.actions import *
+from io import StringIO
 
 
 def create_test_cmd_storage(storage):
     new_stack = Stack(None)
     return PerformedCommandStorage(storage=storage, history=new_stack)
+
+
+def parse(fake_data):
+    lines = fake_data.split("")
+
 
 
 class TestCommandStorage:
@@ -278,3 +284,21 @@ class TestActionMove:
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
             cmd_storage.apply(ActionSquare(step))
+
+
+@pytest.mark.parametrize("actions, expected", [
+    (["InsertFirst 1", "InsertFirst 2", "InsertLast 3", "InsertLast 4", "Reverse", "Move 1", "Pop 0", "Show", "Exit"], []),
+    (["InsertFirst, Show"], []),
+    (["InsertFirst, Show"], [])
+])
+def test_main_scenario(actions, expected, monkeypatch, capsys):
+    fake_output = StringIO()
+    monkeypatch.setattr("builtins.input", lambda _: actions.pop(0))
+    main()
+    captured = capsys.readouterr().out
+
+    assert captured == expected
+
+
+
+

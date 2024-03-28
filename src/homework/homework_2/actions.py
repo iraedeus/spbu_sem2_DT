@@ -13,7 +13,7 @@ START_MESSAGE = (
     "7) Reverse (Reverse the list) \n"
     "8) DeleteSlice --first_index --second_index (Delete all elements by first index to second index inclusive) \n"
     "9) Pop --index (Delete element by index) \n"
-    "10) Move --step (Move all elements to the right by step)"
+    "10) Move --step (Move all elements to the right by step)\n"
     "11) Undo (Undo last action) \n"
     "12) Show (Print your list in console) \n"
     "13) Exit (Exit the program)"
@@ -207,7 +207,7 @@ class ActionDeleteSlice(Action):
 class ActionPop(Action):
     def __init__(self, index: int) -> None:
         self.index = index
-        self.value: Optional[int] = None
+        self.value: int
 
     def do(self, command_storage: PerformedCommandStorage) -> None:
         self.value = command_storage.storage.pop(self.index)
@@ -218,7 +218,7 @@ class ActionPop(Action):
 
 @ACTIONS.register("Move")
 class ActionMove(Action):
-    def __init__(self, step):
+    def __init__(self, step: int) -> None:
         self.step = step
 
     def do(self, command_storage: PerformedCommandStorage) -> None:
