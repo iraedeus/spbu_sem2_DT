@@ -1,7 +1,11 @@
+from io import StringIO
+
+import hypothesis.strategies as st
 import pytest
+from hypothesis import assume
+from hypothesis.stateful import Bundle, RuleBasedStateMachine, invariant, rule
 
 from src.homework.homework_2.actions import *
-from io import StringIO
 
 
 def create_test_cmd_storage(storage):
@@ -12,6 +16,34 @@ def create_test_cmd_storage(storage):
 def parse(fake_data):
     lines = fake_data.split("")
 
+
+class StackTest(RuleBasedStateMachine):
+    def __init__(self):
+        super().__init__()
+
+    database = Stack(None)
+    compared_database = []
+    values = Bundle("values")
+
+    @rule(target=values, v=st.integers())
+    def add_value(self, v):
+        return v
+
+    @rule(v=values)
+    def put_to_database(self, v):
+        self.database.put(v)
+        self.compared_database.append(v)
+
+    @rule()
+    def pop_from_database(self):
+        if len(self.compared_database) > 1:
+            self.database.pop()
+            del self.compared_database[-1]
+
+    @invariant()
+    def compare(self):
+        if len(self.compared_database) != 0:
+            assert self.compared_database[-1] == self.database.head.value
 
 
 class TestCommandStorage:
@@ -286,19 +318,60 @@ class TestActionMove:
             cmd_storage.apply(ActionSquare(step))
 
 
-@pytest.mark.parametrize("actions, expected", [
-    (["InsertFirst 1", "InsertFirst 2", "InsertLast 3", "InsertLast 4", "Reverse", "Move 1", "Pop 0", "Show", "Exit"], []),
-    (["InsertFirst, Show"], []),
-    (["InsertFirst, Show"], [])
-])
+def get_output(string: str):
+    strings = string.split("\n")
+    return eval(strings[-2])
+
+
+@pytest.mark.parametrize(
+    "actions, expected",
+    [
+        (
+            [
+                "InsertFirst 1",
+                "InsertFirst 2",
+                "InsertLast 3",
+                "InsertLast 4",
+                "Reverse",
+                "Move 1",
+                "Pop 0",
+                "Show",
+                "Exit",
+            ],
+            [4, 3, 1],
+        ),
+        (["InsertFirst 100", "InsertLast 500", "Square 0", "Undo", "Show", "Exit"], [100, 500]),
+        (["InsertFirst 100", "InsertLast 10000", "Undo", "Undo", "Show", "Exit"], []),
+    ],
+)
 def test_main_scenario(actions, expected, monkeypatch, capsys):
-    fake_output = StringIO()
     monkeypatch.setattr("builtins.input", lambda _: actions.pop(0))
     main()
     captured = capsys.readouterr().out
 
-    assert captured == expected
+    assert get_output(captured) == expected
 
 
+@pytest.mark.parametrize(
+    "actions, expected_err",
+    [
+        (
+            ["InsertFirst 1", "InsertFirst 2", "InsertLast 3", "InsertLast 4", "Reverse", "Move 1", "Pop 100", "Exit"],
+            "pop index out of range",
+        ),
+        (
+            ["InsertFirst 100", "InsertLast 500", "Square 0", "Undo", "Undo", "Undo", "Undo", "Exit"],
+            "No action in history",
+        ),
+        (["InsertFirst 100", "InsertLast [][", "Exit"], "Your arguments must be integer"),
+    ],
+)
+def test_main_scenario_err(actions, expected_err, monkeypatch, capsys):
+    monkeypatch.setattr("builtins.input", lambda _: actions.pop(0))
+    main()
+    captured = capsys.readouterr().out
+
+    assert captured.split("\n")[-2] == expected_err
 
 
+StackTestCase = StackTest.TestCase
