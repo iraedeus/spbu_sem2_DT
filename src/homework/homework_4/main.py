@@ -1,13 +1,13 @@
 import argparse
 import random
 import time
+from typing import Any, Callable
 
-from typing import Any, Optional, Callable
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from numpy.typing import ArrayLike
 from merge_sort import *
+from numpy.typing import ArrayLike
 
 matplotlib.use("TkAgg")
 
@@ -51,7 +51,7 @@ def check_time(func: Callable, input_data: dict[str, Any], is_threading: bool) -
     for thread_cnt in threads:
         total_time = 0.0
         for j in range(num_of_tests):
-            array = random.sample(range(-100000, 100000), size)
+            array = random.sample(range(-1000000, 1000000), size)
             args = [array, thread_cnt, input_data["multiprocess"]]
             total_time += evaluate_time(func, args, is_threading)
 
@@ -63,14 +63,16 @@ def check_time(func: Callable, input_data: dict[str, Any], is_threading: bool) -
 if __name__ == "__main__":
     input_data = parse_cmd()
     x_axis = np.array(input_data["threads"])
-    y_axis_threading = check_time(multi_merge_sort, input_data, True)
-    y_axis_classic = check_time(merge_sort, input_data, False)
+    y_axis_threading = check_time(parallel_merge_sort, input_data, True)
     y_axis_recursive = check_time(recursive_merge_sort, input_data, False)
 
-    plt.plot(x_axis, y_axis_classic, color="r", label="iterative")
+    plt.title(
+        label=f"size: {input_data['size']}, threads: {input_data['threads']}, multiprocess: {input_data['multiprocess']}"
+    )
     plt.plot(x_axis, y_axis_threading, color="g", label="thread")
     plt.plot(x_axis, y_axis_recursive, color="b", label="recursive")
     plt.ylabel("time, sec")
     plt.xlabel("threads")
     plt.legend()
+    plt.savefig(input_data["output_fp"])
     plt.show()

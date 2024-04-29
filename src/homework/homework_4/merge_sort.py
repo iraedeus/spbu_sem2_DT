@@ -1,12 +1,11 @@
-import queue
-from typing import Union
+from concurrent.futures import ProcessPoolExecutor
 from threading import Thread
+from typing import TypeVar, Union
+
+T = TypeVar("T", str, int, float)
 
 
-Comparable = Union[int, float, str]
-
-
-def merge(first_arr: list, second_arr: list) -> list:
+def merge_two_sorted_lists(first_arr: list, second_arr: list) -> list:
     output = []
     n, m = 0, 0
 
@@ -26,59 +25,79 @@ def merge(first_arr: list, second_arr: list) -> list:
     return output
 
 
-def merge_iter(arr: list[Comparable], init_step: int, step: int, n: int) -> list:
+def merge_iteration(arr: list[T], init_step: int, step: int, n: int) -> list:
     output = []
     sep = init_step + step
     if init_step + step * 2 > n:
-        output += merge(arr[init_step:sep], arr[sep:n])
+        output += merge_two_sorted_lists(arr[init_step:sep], arr[sep:n])
     else:
-        output += merge(arr[init_step:sep], arr[sep : init_step + step * 2])
+        output += merge_two_sorted_lists(arr[init_step:sep], arr[sep : init_step + step * 2])
 
     return output
 
 
-def multi_merge_sort(arr: list[Comparable], threads_cnt: int, multiprocess: bool = False) -> list[Comparable]:
-    q = queue.Queue[list[Comparable]]()
+def thread_merge_sort(arr: list[T], threads_cnt: int) -> list[T]:
+    def helper(subarrs: list, index: int) -> None:
+        subarrs[index] = recursive_merge_sort(subarrs[index])
 
-    def worker() -> None:
-        while True:
-            a = q.get()
-            if q.qsize() != 0:
-                b = q.get()
-                q.put(merge(a, b))
-                q.task_done()
-                q.task_done()
-            else:
-                nonlocal arr
-                arr = a
-                q.task_done()
+    output: list[T] = []
 
-    threads = [Thread(target=worker, name=f"{i} Thread", daemon=True) for i in range(threads_cnt)]
+    if threads_cnt > len(arr):
+        size = 1
+    else:
+        size = len(arr) // threads_cnt
 
-    for t in threads:
-        t.start()
-    for elem in arr:
-        q.put([elem])
+    subarrs = [arr[i : i + size] for i in range(0, len(arr), size)]
+    threads = [Thread(target=helper, args=(subarrs, i)) for i in range(len(subarrs))]
 
-    q.join()
-    return arr
+    for thread in threads:
+        thread.start()
+        thread.join()
+
+    for subarr in subarrs:
+        output = merge_two_sorted_lists(output, subarr)
+
+    return output
 
 
-def merge_sort(arr: list[Comparable]) -> list[Comparable]:
+def multiprocess_merge_sort(arr: list[T], threads_cnt: int) -> list[T]:
+    if threads_cnt > len(arr):
+        size = 1
+    else:
+        size = len(arr) // threads_cnt
+    subarrs = [arr[i : i + size] for i in range(0, len(arr), size)]
+    output: list[T] = []
+
+    with ProcessPoolExecutor(max_workers=threads_cnt) as executor:
+        sorted_subarrs = [executor.submit(recursive_merge_sort, subarr) for subarr in subarrs]
+        for sorted_subarr in sorted_subarrs:
+            output = merge_two_sorted_lists(output, sorted_subarr.result())
+    return output
+
+
+def parallel_merge_sort(arr: list[T], threads_cnt: int, multiprocess: bool = False) -> list[T]:
+    if multiprocess:
+        output = multiprocess_merge_sort(arr, threads_cnt)
+    else:
+        output = thread_merge_sort(arr, threads_cnt)
+
+    return output
+
+
+def iterative_merge(arr: list[T]) -> list[T]:
     n = len(arr)
     i = 1
-    while i < n:
-        new_arr = []
-        lists = [merge_iter(arr, j, i, n) for j in range(0, n, i * 2)]
-        for list in lists:
-            new_arr += list
-        arr = new_arr
+    while i <= n:
+        for j in range(0, n, i * 2):
+            if j + i * 2 > n:
+                arr[j:n] = merge_two_sorted_lists(arr[j : j + i], arr[j + i : n])
+            else:
+                arr[j : j + i * 2] = merge_two_sorted_lists(arr[j : j + i], arr[j + i : j + i * 2])
         i *= 2
-    print(arr)
     return arr
 
 
-def recursive_merge_sort(arr: list[Comparable]) -> list[Comparable]:
+def recursive_merge_sort(arr: list[T]) -> list[T]:
     if len(arr) <= 1:
         return arr
 
@@ -89,5 +108,8 @@ def recursive_merge_sort(arr: list[Comparable]) -> list[Comparable]:
     left_half = recursive_merge_sort(left_half)
     right_half = recursive_merge_sort(right_half)
 
-    print(arr)
-    return merge(left_half, right_half)
+    return merge_two_sorted_lists(left_half, right_half)
+
+
+if __name__ == "__main__":
+    pass
