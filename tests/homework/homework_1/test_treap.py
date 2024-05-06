@@ -1,18 +1,23 @@
 from random import randint
 
+import hypothesis.strategies as st
 import pytest
+from hypothesis import given, settings
 
 from src.homework.homework_1.treap import *
 
 
 def create_test_tree(tree_data):
-    tree = CartesianTree(root=None)
+    tree = CartesianTree()
     for i in tree_data:
         tree[i] = i
     return tree
 
 
 def check_invariant(tree):
+    if tree.root is None:
+        return True
+
     def recursion(parent: Node, left_child: Node, right_child: Node):
         if left_child is None and right_child is None:
             return True
@@ -38,9 +43,10 @@ def check_invariant(tree):
     return recursion(tree.root, tree.root.left, tree.root.right)
 
 
-@pytest.mark.parametrize("size", [2, 100, 1000, 10000])
+@settings(max_examples=10, deadline=None)
+@given(st.integers(min_value=0, max_value=10000))
 def test_setitem(size):
-    tree = CartesianTree(root=None)
+    tree = CartesianTree()
     for i in range(size):
         tree[randint(1, 1000000)] = randint(1, 10000)
 

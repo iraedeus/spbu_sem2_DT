@@ -1,116 +1,90 @@
 import copy
-from collections.abc import Mapping, MutableMapping
+from collections.abc import MutableMapping
 from random import random
-from typing import Any, Iterator, Optional
+from typing import Any, Generic, Iterator, Optional, TypeVar
+
+K = TypeVar("K")
+V = TypeVar("V")
 
 
-class Node:
-    def __init__(self, key: int, value: Any, priority: float, left: Optional["Node"], right: Optional["Node"]) -> None:
-        self.key: int = key
-        self.value: Any = value
+class Node(Generic[K, V]):
+    def __init__(self, key: K, value: V, priority: float, left: Optional["Node"], right: Optional["Node"]) -> None:
+        self.key: K = key
+        self.value: V = value
         self.priority: float = priority
         self.left: Optional[Node] = left
         self.right: Optional[Node] = right
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Node):
-            return NotImplemented
+            raise TypeError(f"Comparison of objects of the {type(self)} and {type(other)} is not supported")
 
         return self.key == other.key and self.value == other.value
 
     def __ne__(self, other: Any) -> bool:
-        if not isinstance(other, Node):
-            return NotImplemented
-
         return not (self == other)
 
 
-class CartesianTree(MutableMapping, Mapping):
-    def __init__(self, root: Optional[Node], length: int = 0) -> None:
-        self.root: Optional[Node] = root
-        self.length: int = length
+class CartesianTree(MutableMapping):
+    def __init__(self) -> None:
+        self.root: Optional[Node] = None
+        self.length: int = 0
 
     def __len__(self) -> int:
         return self.length
 
-    def __getitem__(self, key: int) -> Any:
-        first_tree, subtree = split(self, key)
-        output_tree, second_tree = split(subtree, key + 1)
+    def __getitem__(self, key: K) -> Any:
+        def recursion(tree_node: Optional[Node], key: K) -> Optional[V]:
+            if tree_node is None:
+                raise KeyError(f"The element could not be found by key {key}")
 
-        if output_tree.root is None:
-            raise KeyError
-        else:
-            value = output_tree.root.value
-            return value
+            if tree_node.key == key:
+                return tree_node.value
+            else:
+                return recursion(tree_node.left, key)
 
-    def __setitem__(self, key: int, value: Any) -> None:
-        first_tree, subtree = split(self, key)
-        node_tree, second_tree = split(subtree, key + 1)
+        first_tree, second_tree = split(self, key)
+        return recursion(second_tree.root, key)
 
-        new_node = Node(key, value, random(), None, None)
-        node_tree.root = new_node
+    def __setitem__(self, key: K, value: V) -> None:
+        first_tree, second_tree = split(self, key)
+        node = Node(key, value, random(), None, None)
+        node_tree = CartesianTree()
+        node_tree.root = node
 
-        output_tree = merge(merge(first_tree, node_tree), second_tree)
+        try:
+            del second_tree[key]
+        except KeyError:
+            self.length += 1
 
-        self.root = output_tree.root
-        self.length += 1
+        self.root = merge(merge(first_tree, node_tree), second_tree).root
 
-    def __delitem__(self, key: int) -> None:
-        first_tree, subtree = split(self, key)
-        node_tree, second_tree = split(subtree, key + 1)
+    def __delitem__(self, key: K) -> None:
+        def recursion(tree_node: Optional[Node], key: K) -> Optional[Node]:
+            if tree_node is not None:
+                if tree_node.key < key:
+                    return recursion(tree_node.right, key)
+                elif tree_node.key > key:
+                    return recursion(tree_node.left, key)
+                else:
+                    return merge_nodes(tree_node.left, tree_node.right)
+            else:
+                raise KeyError(f"The element could not be found by key {key}")
 
-        if node_tree.root is None:
-            raise KeyError
-        else:
-            del node_tree
-            output_tree = merge(first_tree, second_tree)
-
-        self.root = output_tree.root
-        self.length -= 1
-
-    def __eq__(self, other: Any) -> bool:
-        if not isinstance(other, CartesianTree):
-            return NotImplemented
-        if self.length != other.length:
-            return False
-        if self.root != other.root:
-            return False
-
-        def recursion(first_node: Optional[Node], second_node: Optional[Node]) -> bool:
-            if first_node is None and second_node is None:
-                return True
-            if first_node is None or second_node is None:
-                return False
-
-            return (
-                first_node == second_node
-                and recursion(first_node.left, second_node.left)
-                and recursion(first_node.right, second_node.right)
-            )
-
-        return recursion(self.root, other.root)
-
-    def __ne__(self, other: Any) -> bool:
-        if not isinstance(other, CartesianTree):
-            return NotImplemented
-        return not (self == other)
+        self.root = recursion(self.root, key)
 
     def __iter__(self) -> Iterator:
         if self.root is None:
             return iter([])
 
-        output: list[int] = []
-
-        def recursion(current_node: Node, nodes: list) -> None:
+        def recursion(current_node: Node) -> Iterator:
             if current_node.left is not None:
-                recursion(current_node.left, nodes)
-            nodes.append(current_node.key)
+                yield from recursion(current_node.left)
+            yield current_node.key
             if current_node.right is not None:
-                recursion(current_node.right, nodes)
+                yield from recursion(current_node.right)
 
-        recursion(self.root, output)
-
-        return iter(output)
+        yield from recursion(current_node=self.root)
 
 
 def merge_nodes(lower_node: Optional[Node], higher_node: Optional[Node]) -> Optional[Node]:
@@ -133,10 +107,13 @@ def merge_nodes(lower_node: Optional[Node], higher_node: Optional[Node]) -> Opti
 
 def merge(lower_tree: CartesianTree, higher_tree: CartesianTree) -> CartesianTree:
     node = merge_nodes(lower_tree.root, higher_tree.root)
-    return CartesianTree(root=node)
+    output_tree = CartesianTree()
+    output_tree.root = node
+
+    return output_tree
 
 
-def split_nodes(node: Optional[Node], key: int) -> tuple[Optional[Node], Optional[Node]]:
+def split_nodes(node: Optional[Node], key: K) -> tuple[Optional[Node], Optional[Node]]:
     if node is None:
         return None, None
 
@@ -160,6 +137,11 @@ def split_nodes(node: Optional[Node], key: int) -> tuple[Optional[Node], Optiona
     return lower_node, higher_node
 
 
-def split(tree: CartesianTree, key: int) -> tuple[CartesianTree, CartesianTree]:
+def split(tree: CartesianTree, key: K) -> tuple[CartesianTree, CartesianTree]:
     lower_node, higher_node = split_nodes(tree.root, key)
-    return CartesianTree(root=lower_node), CartesianTree(root=higher_node)
+    lower_tree = CartesianTree()
+    lower_tree.root = lower_node
+    higher_tree = CartesianTree()
+    higher_tree.root = higher_node
+
+    return lower_tree, higher_tree
