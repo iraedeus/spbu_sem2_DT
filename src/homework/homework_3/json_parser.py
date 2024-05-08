@@ -1,4 +1,5 @@
 import json
+from json import JSONDecodeError
 from dataclasses import asdict
 from typing import Callable, TypeVar
 
@@ -7,10 +8,10 @@ T = TypeVar("T")
 
 def parse_json(fp: str) -> dict:
     with open(fp, "r") as json_file:
-        if json_file.read() == "":
-            return {}
-        else:
+        try:
             return json.load(json_file)
+        except JSONDecodeError:
+            return {}
 
 
 def dataclass_dump(cls: Callable, objects: list, fp: str) -> None:
