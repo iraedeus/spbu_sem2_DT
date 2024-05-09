@@ -1,7 +1,12 @@
+from __future__ import annotations
+
 import json
-from json import JSONDecodeError
 from dataclasses import asdict
-from typing import Callable, TypeVar
+from json import JSONDecodeError
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 T = TypeVar("T")
 
@@ -14,9 +19,8 @@ def parse_json(fp: str) -> dict:
             return {}
 
 
-def dataclass_dump(cls: Callable, objects: list, fp: str) -> None:
-    obj_dict = parse_json(fp)
-    obj_dict[cls.__name__] = [asdict(obj) for obj in objects]
+def dataclass_dump(obj: DataclassInstance, fp: str) -> None:
+    obj_dict = asdict(obj)
     with open(fp, "w+") as json_file:
         json.dump(obj_dict, json_file)
         json_file.write("\n")

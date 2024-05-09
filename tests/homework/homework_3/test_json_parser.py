@@ -27,9 +27,9 @@ def dummy_strategy():
     return st.builds(Dummy, amogus=st.integers(), imposter=st.text(), another_dataclass=nested_strategy())
 
 
-@given(first_obj=dummy_strategy(), second_obj=dummy_strategy())
-def test_dump(first_obj, second_obj):
-    dict_repr = {Dummy.__name__: [asdict(first_obj), asdict(second_obj)]}
+@given(obj=dummy_strategy())
+def test_dump(obj):
+    dict_repr = asdict(obj)
     with tempfile.NamedTemporaryFile(mode="r+") as file:
-        dataclass_dump(Dummy, [first_obj, second_obj], f"{file.name}")
+        dataclass_dump(obj, f"{file.name}")
         assert dict_repr == json.load(file)
