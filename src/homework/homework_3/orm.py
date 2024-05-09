@@ -1,0 +1,81 @@
+from typing import Any, Optional, Type, TypeVar
+
+from src.homework.homework_3.json_parser import parse_json
+
+T = TypeVar("T", bound="ORM")
+
+
+class IncompatibleData(Exception):
+    pass
+
+
+class Descr(object):
+    def __init__(self, label: str) -> None:
+        self._label = label
+
+    def __set__(self, instance: T, value: Any) -> None:
+        instance.__dict__[self._label] = value
+
+    def __get__(self, instance: T, owner: Type[T]) -> Optional[Any]:
+        if not hasattr(instance, "dict"):
+            raise AttributeError
+        attr_name = self._label
+        value = instance.__dict__[attr_name]
+
+        if value:
+            return value
+        elif value is None and attr_name in instance.dict.keys():
+            new_value = instance.dict.get(attr_name)
+            setattr(instance, attr_name, new_value)
+            return instance.__dict__[attr_name]
+        else:
+            return value
+
+
+class ORM:
+    @classmethod
+    def from_dict(cls: Type[T], fp: str, strict: bool = False) -> T:
+        asdict_obj = parse_json(fp)
+
+        def recursion(cls: Type[T], asdict_obj: dict[str, Any]) -> T:
+            new_cls = cls.set_descr(asdict_obj, strict)
+            instance = new_cls()
+            setattr(instance, "dict", asdict_obj)
+            datacls_attrs = new_cls.__annotations__.keys()
+            actual_attrs = asdict_obj.keys()
+
+            for name in actual_attrs:
+                if isinstance(asdict_obj[name], dict):
+                    sub_cls = instance.__annotations__[name]
+                    setattr(instance, name, recursion(sub_cls, asdict_obj[name]))
+
+            if not strict:
+                for name in actual_attrs:
+                    if name not in datacls_attrs:
+                        setattr(instance, name, None)
+            return instance
+
+        return recursion(cls, asdict_obj)
+
+    @classmethod
+    def set_descr(cls: Type[T], asdict_obj: dict[str, Any], strict: bool = False) -> Type[T]:
+        datacls_attrs = cls.__annotations__.keys()
+        actual_attrs = asdict_obj.keys()
+
+        if strict:
+            if datacls_attrs == actual_attrs:
+                for name in datacls_attrs:
+                    setattr(cls, name, Descr(name))
+            else:
+                raise IncompatibleData(
+                    "The data from the JSON file does not match the expected structure in strict mode."
+                )
+        else:
+            for name in actual_attrs:
+                setattr(cls, name, Descr(name))
+
+        return cls
+
+
+if __name__ == "__main__":
+    pass
