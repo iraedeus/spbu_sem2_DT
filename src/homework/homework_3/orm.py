@@ -1,4 +1,4 @@
-from typing import Any, Optional, Type, TypeVar
+from typing import Any, Optional, Type, TypeVar, get_args
 
 from src.homework.homework_3.json_parser import parse_json
 
@@ -34,9 +34,7 @@ class Descr(object):
 
 class ORM:
     @classmethod
-    def from_dict(cls: Type[T], fp: str, strict: bool = False) -> T:
-        asdict_obj = parse_json(fp)
-
+    def from_dict(cls: Type[T], asdict_obj: dict[str, Any], strict: bool = False) -> T:
         def recursion(cls: Type[T], asdict_obj: dict[str, Any]) -> T:
             new_cls = cls.set_descr(asdict_obj, strict)
             instance = new_cls()
@@ -45,9 +43,18 @@ class ORM:
             actual_attrs = asdict_obj.keys()
 
             for name in actual_attrs:
-                if isinstance(asdict_obj[name], dict):
-                    sub_cls = instance.__annotations__[name]
-                    setattr(instance, name, recursion(sub_cls, asdict_obj[name]))
+                curr_obj = asdict_obj[name]
+                if isinstance(curr_obj, dict):
+                    try:
+                        sub_cls = instance.__annotations__[name]
+                    except KeyError:
+                        continue
+
+                    setattr(instance, name, recursion(sub_cls, curr_obj))
+                elif (isinstance(curr_obj, list) and len(curr_obj) != 0) and isinstance(curr_obj[0], dict):
+                    sub_cls = get_args(instance.__annotations__[name])
+                    objects = [recursion(sub_cls[0], obj) for obj in curr_obj]
+                    setattr(instance, name, objects)
 
             if not strict:
                 for name in actual_attrs:

@@ -29,13 +29,8 @@ class TestSecond(ORM):
 
 
 def create_obj(cls, asdict_obj, strict=False):
-    with NamedTemporaryFile("r+") as json_file:
-        data = json.dumps(asdict_obj)
-        print(data)
-        json_file.write(data)
-        json_file.read()
-        obj = cls.from_dict(json_file.name, strict)
-        return obj
+    obj = cls.from_dict(asdict_obj, strict)
+    return obj
 
 
 class TestORM:
