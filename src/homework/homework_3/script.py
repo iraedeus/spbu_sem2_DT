@@ -1,10 +1,9 @@
 import argparse
-import json
 from base64 import b64decode
+from typing import Any
 
 import requests
-from data import Owner, PullRequest, ReadmeFile, Repo
-from json_parser import parse_json
+from data import Owner, PullRequest, ReadmeFile, Repo, Branch, Commit
 
 USER_CHOICES = (
     "1) Get general info about repo \n"
@@ -24,18 +23,24 @@ def parse_args() -> tuple[str, str]:
     return output
 
 
-def write_info_repo(username: str, repo_name: str) -> None:
+def get_repo(username: str, repo_name: str) -> dict[str, Any]:
     repo_response = requests.get(f"https://api.github.com/repos/{username}/{repo_name}")
-    str_json = json.dumps(repo_response.json())
-    with open("repo.json", "w+") as file:
-        file.write(str_json)
+    return repo_response.json()
 
 
-def write_readme(username: str, repo_name: str) -> None:
+def get_readme(username: str, repo_name: str) -> dict[str, Any]:
     repo_response = requests.get(f"https://api.github.com/repos/{username}/{repo_name}/contents/README.md")
-    str_json = json.dumps(repo_response.json())
-    with open("readme.json", "w+") as file:
-        file.write(str_json)
+    return repo_response.json()
+
+
+def get_pull_requests(username: str, repo_name: str) -> list[dict[str, Any]]:
+    repo_response = requests.get(f"https://api.github.com/repos/{username}/{repo_name}/pulls")
+    return repo_response.json()
+
+
+def get_branches(username: str, repo_name: str) -> list[dict[str, Any]]:
+    repo_response = requests.get(f"https://api.github.com/repos/{username}/{repo_name}/branches")
+    return repo_response.json()
 
 
 def output_owner(owner: Owner) -> str:
@@ -43,7 +48,7 @@ def output_owner(owner: Owner) -> str:
     return output_str
 
 
-def output_to_user_first_choice(repo: Repo, readme: ReadmeFile) -> None:
+def output_repo_info(repo: Repo, readme: ReadmeFile) -> None:
     def output_readme(readme: ReadmeFile) -> str:
         if readme.name:
             readme_data = b64decode(readme.content).decode()
@@ -64,14 +69,7 @@ def output_to_user_first_choice(repo: Repo, readme: ReadmeFile) -> None:
     )
 
 
-def write_pull_requests(username: str, repo_name: str) -> None:
-    repo_response = requests.get(f"https://api.github.com/repos/{username}/{repo_name}/pulls")
-    str_json = json.dumps(repo_response.json())
-    with open("pulls.json", "w+") as file:
-        file.write(str_json)
-
-
-def output_pull(pull: PullRequest) -> None:
+def output_pull_info(pull: PullRequest) -> None:
     def output_rewievers(requested_reviewers: list[Owner]) -> str:
         str = ""
         for reviewer in requested_reviewers:
@@ -95,8 +93,8 @@ def output_pull(pull: PullRequest) -> None:
     )
 
 
-def pulls_choice(pulls: list[PullRequest]) -> None:
-    print("Choose a pull's number")
+def output_pulls(pulls: list[PullRequest]) -> None:
+    print("Choose a pull's number:")
     pull_number = 1
     for pull in pulls:
         print(f"{pull_number}) Pull name: {pull.title}")
@@ -105,32 +103,64 @@ def pulls_choice(pulls: list[PullRequest]) -> None:
     user_choice = input()
     try:
         pull_number = int(user_choice) - 1
-        output_pull(pulls[pull_number])
-    except Exception as err:
-        print(err)
+        output_pull_info(pulls[pull_number])
+    except:
         print("Incorrect number of pull request\n")
 
 
-def get_all_json(args: tuple[str, str]) -> None:
-    write_info_repo(*args)
-    write_readme(*args)
-    write_pull_requests(*args)
+def output_commits(branch: Branch) -> None:
+    last_commit_url = branch.commit.url
 
+    def get_commit_from_url(url: str):
+        response = requests.get(url)
+        return response.json()
+
+    def recursion(current_commit: Commit) -> None:
+        for parent in current_commit.parents:
+            parent_commit = Commit.from_dict(get_commit_from_url(parent.url))
+            recursion(parent_commit)
+        print(f"* commit {current_commit.sha}: \n"
+              f"|\n"
+              f"|\n"
+              f"|      {current_commit.commit.message}\n"
+              f"|\n"
+              f"|\n")
+
+    json_dict = get_commit_from_url(last_commit_url)
+    last_commit_obj = Commit.from_dict(json_dict)
+    recursion(last_commit_obj)
+    print("\n")
+
+
+def output_branches(branches: list[Branch]) -> None:
+    print("Choose a branch number:")
+    branch_number = 1
+    for branch in branches:
+        print(f"{branch_number}) Branch name: {branch.name}")
+        branch_number += 1
+
+    user_choice = input()
+    try:
+        branch_number = int(user_choice) - 1
+        output_commits(branches[branch_number])
+    except Exception as error:
+        print(error)
+        print("Incorrect number of branch\n")
 
 def main() -> None:
     args = parse_args()
-    get_all_json(args)
-    repo = Repo.from_dict(parse_json("repo.json"))
-    readme = ReadmeFile.from_dict(parse_json("readme.json"))
-    pulls = [PullRequest.from_dict(asdict_obj) for asdict_obj in parse_json("pulls.json")]
+    repo = Repo.from_dict(get_repo(*args))
+    readme = ReadmeFile.from_dict(get_readme(*args))
+    pulls = [PullRequest.from_dict(asdict_obj) for asdict_obj in get_pull_requests(*args)]
+    branches = [Branch.from_dict(asdict_obj) for asdict_obj in get_branches(*args)]
     while True:
         user_choice = input(USER_CHOICES)
         if user_choice == "1":
-            output_to_user_first_choice(repo, readme)
+            output_repo_info(repo, readme)
         elif user_choice == "2":
-            pulls_choice(pulls)
+            output_pulls(pulls)
         elif user_choice == "3":
-            pass
+            output_branches(branches)
         elif user_choice == "4":
             break
         else:

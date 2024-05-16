@@ -37,3 +37,28 @@ class PullRequest(ORM):
     requested_reviewers: list[Owner] = None  # type: ignore
     head: MergingBranch = None  # type: ignore
     base: MergingBranch = None  # type: ignore
+
+
+@dataclass
+class Commit(ORM):
+    @dataclass
+    class CommitMessage(ORM):
+        message: Optional[str] = None
+    @dataclass
+    class Parent(ORM):
+        url: Optional[str] = None
+
+    sha: Optional[str] = None
+    commit: CommitMessage = None # type: ignore
+    parents: list[Parent] = None # type: ignore
+
+
+@dataclass
+class Branch(ORM):
+    @dataclass
+    class LastCommit(ORM):
+        sha: Optional[str] = None
+        url: Optional[str] = None
+
+    name: Optional[str] = None
+    commit: LastCommit = None  # type: ignore

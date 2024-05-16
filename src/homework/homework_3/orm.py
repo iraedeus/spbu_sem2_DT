@@ -52,9 +52,12 @@ class ORM:
 
                     setattr(instance, name, recursion(sub_cls, curr_obj))
                 elif (isinstance(curr_obj, list) and len(curr_obj) != 0) and isinstance(curr_obj[0], dict):
-                    sub_cls = get_args(instance.__annotations__[name])
-                    objects = [recursion(sub_cls[0], obj) for obj in curr_obj]
-                    setattr(instance, name, objects)
+                    try:
+                        sub_cls = get_args(instance.__annotations__[name])
+                        objects = [recursion(sub_cls[0], obj) for obj in curr_obj]
+                        setattr(instance, name, objects)
+                    except KeyError:
+                        continue
 
             if not strict:
                 for name in actual_attrs:
