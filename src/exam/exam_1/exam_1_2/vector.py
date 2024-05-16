@@ -1,16 +1,17 @@
-from typing import TypeVar
+import decimal
+from typing import Generic, TypeVar
 
-T = TypeVar("T")
+T = TypeVar("T", float, complex, int, decimal.Decimal)
 
 
 class DimensionError(Exception):
     pass
 
 
-class Vector:
+class Vector(Generic[T]):
     def __init__(self, coords: list[T]) -> None:
-        self.coords = coords
-        self.dim = len(coords)
+        self.coords: list[T] = coords
+        self.dim: int = len(coords)
 
     @staticmethod
     def scalar_product(fisrt: "Vector", second: "Vector") -> float:
@@ -18,7 +19,7 @@ class Vector:
             raise DimensionError(
                 "It is not possible to perform a scalar product operation for vectors of different dimensions"
             )
-        return sum([item[0]*item[1] for item in zip(fisrt.coords, second.coords)])
+        return sum([item[0] * item[1] for item in zip(fisrt.coords, second.coords)])
 
     def is_null(self) -> bool:
         return sum(self.coords) == 0
@@ -28,7 +29,7 @@ class Vector:
             raise DimensionError(
                 "It is not possible to perform an addition operation for vectors of different dimensions"
             )
-        new_coords = [item[0]+item[1] for item in zip(self.coords, other.coords)]
+        new_coords = [item[0] + item[1] for item in zip(self.coords, other.coords)]
         return Vector(new_coords)
 
     def __sub__(self, other: "Vector") -> "Vector":
@@ -41,14 +42,21 @@ class Vector:
 
     def __mul__(self, other: "Vector") -> "Vector":
         if (self.dim != 3) or (other.dim != 3):
-            raise DimensionError
+            raise DimensionError(
+                "It is impossible to perform a vector product for vectors whose dimension is not equal to 3"
+            )
         x = self.coords[1] * other.coords[2] - self.coords[2] * other.coords[1]
         y = self.coords[0] * other.coords[2] - self.coords[2] * other.coords[0]
         z = self.coords[0] * other.coords[1] - self.coords[1] * other.coords[0]
 
-        return Vector([x, y, z])
+        return Vector([x, -y, z])
 
-    def __eq__(self, other: "Vector") -> bool:
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Vector):
+            raise TypeError
+        if self.dim != other.dim:
+            raise DimensionError("It is not possible compare vectors of different dimensions")
+
         return self.coords == other.coords
 
     def __repr__(self) -> str:
@@ -59,7 +67,4 @@ class Vector:
 
 
 if __name__ == "__main__":
-    v = Vector([1, 2, 4])
-    v2 = Vector([5, 4, 3])
-    print(v + v2)
-    print(v2 + v)
+    pass
