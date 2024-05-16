@@ -18,7 +18,9 @@ class TestPropertyVector:
     @settings(max_examples=100)
     @given(first=int_vector_strategy(10), second=int_vector_strategy(10))
     def test_sub(self, first, second):
-        assert True
+        first_result = first - second
+        second_result = second - first
+        assert all([item[0] == -item[1] for item in zip(first_result.coords, second_result.coords)])
 
     @settings(max_examples=100)
     @given(first=int_vector_strategy(10), second=int_vector_strategy(10), third=int_vector_strategy(10))
