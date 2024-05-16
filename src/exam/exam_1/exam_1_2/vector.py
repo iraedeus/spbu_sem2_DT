@@ -59,6 +59,9 @@ class Vector(Generic[T]):
 
         return self.coords == other.coords
 
+    def __len__(self) -> int:
+        return self.dim
+
     def __repr__(self) -> str:
         str_coords = ""
         for coord in self.coords:
