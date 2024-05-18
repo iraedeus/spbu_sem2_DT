@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Optional
 
-from orm import ORM
+from src.homework.homework_3.orm import ORM
 
 
 @dataclass
@@ -44,13 +44,14 @@ class Commit(ORM):
     @dataclass
     class CommitMessage(ORM):
         message: Optional[str] = None
+
     @dataclass
     class Parent(ORM):
         url: Optional[str] = None
 
     sha: Optional[str] = None
-    commit: CommitMessage = None # type: ignore
-    parents: list[Parent] = None # type: ignore
+    commit: CommitMessage = None  # type: ignore
+    parents: list[Parent] = None  # type: ignore
 
 
 @dataclass
@@ -62,3 +63,7 @@ class Branch(ORM):
 
     name: Optional[str] = None
     commit: LastCommit = None  # type: ignore
+
+
+if __name__ == "__main__":
+    pass

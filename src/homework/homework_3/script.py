@@ -3,7 +3,8 @@ from base64 import b64decode
 from typing import Any
 
 import requests
-from data import Owner, PullRequest, ReadmeFile, Repo, Branch, Commit
+
+from src.homework.homework_3.data import Branch, Commit, Owner, PullRequest, ReadmeFile, Repo
 
 USER_CHOICES = (
     "1) Get general info about repo \n"
@@ -94,13 +95,12 @@ def output_pull_info(pull: PullRequest) -> None:
 
 
 def output_pulls(pulls: list[PullRequest]) -> None:
-    print("Choose a pull's number:")
     pull_number = 1
     for pull in pulls:
         print(f"{pull_number}) Pull name: {pull.title}")
         pull_number += 1
 
-    user_choice = input()
+    user_choice = input("Choose a pull's number: ")
     try:
         pull_number = int(user_choice) - 1
         output_pull_info(pulls[pull_number])
@@ -111,35 +111,43 @@ def output_pulls(pulls: list[PullRequest]) -> None:
 def output_commits(branch: Branch) -> None:
     last_commit_url = branch.commit.url
 
-    def get_commit_from_url(url: str):
+    def get_commit_from_url(url: str) -> dict[str, Any]:
         response = requests.get(url)
         return response.json()
 
     def recursion(current_commit: Commit) -> None:
-        for parent in current_commit.parents:
-            parent_commit = Commit.from_dict(get_commit_from_url(parent.url))
-            recursion(parent_commit)
-        print(f"* commit {current_commit.sha}: \n"
-              f"|\n"
-              f"|\n"
-              f"|      {current_commit.commit.message}\n"
-              f"|\n"
-              f"|\n")
+        if current_commit.parents == []:
+            return None
+        parent = current_commit.parents[0]
+        parent_commit = Commit.from_dict(get_commit_from_url(parent.url))
+        messages = current_commit.commit.message.split("\n")
+        recursion(parent_commit)
+        str = ""
+        for message in messages:
+            str += f"|     {message}\n"
+
+        print(
+            f"commit: {current_commit.sha} \n"
+            f"|    \n"
+            f"|    \n"
+            f"{str}"
+            f"|    \n"
+            f"|    \n"
+            f"------------------------------"
+        )
 
     json_dict = get_commit_from_url(last_commit_url)
     last_commit_obj = Commit.from_dict(json_dict)
     recursion(last_commit_obj)
-    print("\n")
 
 
 def output_branches(branches: list[Branch]) -> None:
-    print("Choose a branch number:")
     branch_number = 1
     for branch in branches:
         print(f"{branch_number}) Branch name: {branch.name}")
         branch_number += 1
 
-    user_choice = input()
+    user_choice = input("Choose a branch number: ")
     try:
         branch_number = int(user_choice) - 1
         output_commits(branches[branch_number])
@@ -147,20 +155,33 @@ def output_branches(branches: list[Branch]) -> None:
         print(error)
         print("Incorrect number of branch\n")
 
+
 def main() -> None:
     args = parse_args()
-    repo = Repo.from_dict(get_repo(*args))
-    readme = ReadmeFile.from_dict(get_readme(*args))
-    pulls = [PullRequest.from_dict(asdict_obj) for asdict_obj in get_pull_requests(*args)]
-    branches = [Branch.from_dict(asdict_obj) for asdict_obj in get_branches(*args)]
+    repo = None
+    readme = None
+    pulls = None
+    branches = None
+
     while True:
         user_choice = input(USER_CHOICES)
+
         if user_choice == "1":
+            repo = Repo.from_dict(get_repo(*args))
+            readme = ReadmeFile.from_dict(get_readme(*args))
             output_repo_info(repo, readme)
+
         elif user_choice == "2":
-            output_pulls(pulls)
+            pulls = [PullRequest.from_dict(asdict_obj) for asdict_obj in get_pull_requests(*args)]
+            if len(pulls) != 0:
+                output_pulls(pulls)
+            else:
+                print("Can't find any pull requests")
+
         elif user_choice == "3":
+            branches = [Branch.from_dict(asdict_obj) for asdict_obj in get_branches(*args)]
             output_branches(branches)
+
         elif user_choice == "4":
             break
         else:
