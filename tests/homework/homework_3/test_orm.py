@@ -1,31 +1,27 @@
-import json
 from dataclasses import dataclass
-from tempfile import NamedTemporaryFile
-from typing import Optional
 
 import pytest
 
-from src.homework.homework_3.json_parser import *
 from src.homework.homework_3.orm import ORM, IncompatibleData
 
 
 @dataclass
 class TestFirst(ORM):
-    name: Optional[str] = None
-    login: Optional[str] = None
-    is_authorized: Optional[bool] = None
+    name: str
+    login: str
+    is_authorized: bool
 
 
 @dataclass
 class TestNested(ORM):
-    ggwp: Optional[bool] = None
-    csgo: Optional[int] = None
+    ggwp: bool
+    csgo: int
 
 
 @dataclass
 class TestSecond(ORM):
-    name: Optional[str] = None
-    game: TestNested = None
+    name: str
+    game: TestNested
 
 
 def create_obj(cls, asdict_obj, strict=False):
@@ -67,7 +63,7 @@ class TestORM:
     @pytest.mark.parametrize("asdict_obj", [({"name": "amogus", "login": "lays", "is_authorized": True})])
     def test_from_dict_no_wraps(self, asdict_obj):
         obj = create_obj(TestFirst, asdict_obj)
-        expected = TestFirst()
+        expected = TestFirst(None, None, None)
         [setattr(expected, name, item) for name, item in asdict_obj.items()]
         setattr(expected, "dict", asdict_obj)
         assert obj == expected

@@ -1,68 +1,67 @@
 from dataclasses import dataclass
-from typing import Optional
 
 from src.homework.homework_3.orm import ORM
 
 
 @dataclass
 class Owner(ORM):
-    login: Optional[str] = None
-    id: Optional[int] = None
-    html_url: Optional[str] = None
+    login: str
+    id: int
+    html_url: str
 
 
 @dataclass
 class ReadmeFile(ORM):
-    name: Optional[str] = None
-    content: Optional[str] = None
+    name: str
+    content: str
 
 
 @dataclass
 class Repo(ORM):
-    id: Optional[int] = None
-    name: Optional[str] = None
-    owner: Owner = None  # type: ignore
-    language: Optional[str] = None
+    id: int
+    name: str
+    owner: Owner
+    language: str
 
 
 @dataclass
 class PullRequest(ORM):
     @dataclass
     class MergingBranch(ORM):
-        ref: Optional[str] = None
+        ref: str
 
-    title: Optional[str] = None
-    id: Optional[int] = None
-    user: Owner = None  # type: ignore
-    requested_reviewers: list[Owner] = None  # type: ignore
-    head: MergingBranch = None  # type: ignore
-    base: MergingBranch = None  # type: ignore
+    title: str
+    id: int
+    user: Owner
+    requested_reviewers: list[Owner]
+    head: MergingBranch
+    base: MergingBranch
 
 
 @dataclass
 class Commit(ORM):
     @dataclass
     class CommitMessage(ORM):
-        message: Optional[str] = None
+        message: str
 
     @dataclass
     class Parent(ORM):
-        url: Optional[str] = None
+        url: str
 
-    sha: Optional[str] = None
-    commit: CommitMessage = None  # type: ignore
-    parents: list[Parent] = None  # type: ignore
+    sha: str
+    commit: CommitMessage
+    parents: list[Parent]
 
 
 @dataclass
 class Branch(ORM):
     @dataclass
     class LastCommit(ORM):
-        sha: Optional[str] = None
-        url: Optional[str] = None
+        sha: str
+        url: str
 
-    name: Optional[str] = None
-    commit: LastCommit = None  # type: ignore
+    name: str
+    commit: LastCommit
 
 
 if __name__ == "__main__":

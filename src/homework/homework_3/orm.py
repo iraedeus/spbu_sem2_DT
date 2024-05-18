@@ -36,11 +36,12 @@ class ORM:
     @classmethod
     def from_dict(cls: Type[T], asdict_obj: dict[str, Any], strict: bool = False) -> T:
         def recursion(cls: Type[T], asdict_obj: dict[str, Any]) -> T:
-            new_cls = cls.set_descr(asdict_obj, strict)
-            instance = new_cls()
-            setattr(instance, "dict", asdict_obj)
-            datacls_attrs = new_cls.__annotations__.keys()
+            cls.set_descr(asdict_obj, strict)
+            datacls_attrs = cls.__annotations__.keys()
             actual_attrs = asdict_obj.keys()
+            arr = [None] * len(datacls_attrs)
+            instance = cls(*arr)
+            setattr(instance, "dict", asdict_obj)
 
             for name in actual_attrs:
                 curr_obj = asdict_obj[name]
@@ -68,7 +69,7 @@ class ORM:
         return recursion(cls, asdict_obj)
 
     @classmethod
-    def set_descr(cls: Type[T], asdict_obj: dict[str, Any], strict: bool = False) -> Type[T]:
+    def set_descr(cls: Type[T], asdict_obj: dict[str, Any], strict: bool = False) -> None:
         datacls_attrs = cls.__annotations__.keys()
         actual_attrs = asdict_obj.keys()
 
@@ -83,8 +84,6 @@ class ORM:
         else:
             for name in actual_attrs:
                 setattr(cls, name, Descr(name))
-
-        return cls
 
 
 if __name__ == "__main__":
