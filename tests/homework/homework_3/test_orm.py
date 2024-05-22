@@ -82,6 +82,7 @@ class TestORM:
         obj = create_obj(TestSecond, asdict_obj)
         nested_obj = getattr(obj, keys[0])
         getattr(nested_obj, keys[1])
+
         assert nested_obj.__dict__ == expected
 
     @pytest.mark.parametrize(

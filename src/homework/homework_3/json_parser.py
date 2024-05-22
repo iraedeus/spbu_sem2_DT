@@ -24,7 +24,3 @@ def dataclass_dump(obj: DataclassInstance, fp: str) -> None:
     with open(fp, "w+") as json_file:
         json.dump(obj_dict, json_file)
         json_file.write("\n")
-
-
-if __name__ == "__main__":
-    pass

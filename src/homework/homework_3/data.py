@@ -62,7 +62,3 @@ class Branch(ORM):
 
     name: str
     commit: LastCommit
-
-
-if __name__ == "__main__":
-    pass
