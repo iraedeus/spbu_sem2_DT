@@ -12,6 +12,7 @@ class IncompatibleData(Exception):
 class Descriptor(object):
     def __init__(self, label: str) -> None:
         self._label = label
+        self._value = None
 
     def __set__(self, instance: T, value: Any) -> None:
         instance.__dict__[self._label] = value
@@ -24,7 +25,10 @@ class Descriptor(object):
         if attr_name not in instance.dict.keys():
             raise AttributeError(f"The object does not have an attribute with a name {attr_name}")
 
-        value = instance.__dict__[attr_name]
+        if not self._value:
+            self._value = instance.__dict__[attr_name]
+
+        value = self._value
 
         if value:
             return value
