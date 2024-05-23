@@ -1,6 +1,6 @@
-import copy
 import re
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from multiprocessing import current_process
 from queue import Queue
 from typing import Optional
 
@@ -35,6 +35,7 @@ def get_sublinks(page_link: str) -> list[str]:
 
 
 def path_finder(depth: int, init_page_link: str, sub_links: list[str]) -> Optional[list[str]]:
+    print(f"Process {current_process().name} started\n")
     queue: Queue = Queue(-1)
     for sub_link in sub_links:
         queue.put([init_page_link, sub_link])
@@ -51,7 +52,7 @@ def path_finder(depth: int, init_page_link: str, sub_links: list[str]) -> Option
 
         for link in next_links:
             if link == "https://en.wikipedia.org/wiki/Adolf_Hitler":
-                print()
+                print(f"{current_process().name} found a path and has ended.")
                 return current_path + [link]
             else:
                 queue.put(current_path + [link])
