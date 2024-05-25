@@ -49,5 +49,16 @@ class FieldView(ttk.Frame):
         self.config(height=300, width=300)
 
 
+class GameResultView(ttk.Frame):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.label = ttk.Label(self)
+        self.label.pack()
+        self.to_menu_btn = ttk.Button(self, text="Return to main menu")
+        self.to_menu_btn.pack()
+
+    pass
+
+
 if __name__ == "__main__":
     pass

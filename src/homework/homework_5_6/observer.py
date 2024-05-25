@@ -9,7 +9,7 @@ class Observable(Generic[T]):
         self._value = initial
         self.callbacks: list[T2ANY_CALLABLE] = []
 
-    def add_callback(self, func: T2ANY_CALLABLE):
+    def add_callback(self, func: T2ANY_CALLABLE) -> None:
         self.callbacks.append(func)
 
     def _do_callbacks(self) -> None:
@@ -21,11 +21,16 @@ class Observable(Generic[T]):
         return self._value
 
     @value.setter
-    def value(self, new_value: T):
+    def value(self, new_value: T) -> None:
         self._value = new_value
         self._do_callbacks()
 
     @value.deleter
-    def value(self):
+    def value(self) -> None:
         self._value = None
         self._do_callbacks()
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, Observable):
+            return NotImplemented
+        return self.value == other.value
