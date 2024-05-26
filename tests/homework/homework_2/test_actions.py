@@ -9,41 +9,7 @@ from src.homework.homework_2.actions import *
 
 
 def create_test_cmd_storage(storage):
-    new_stack = Stack(None)
-    return PerformedCommandStorage(storage=storage, history=new_stack)
-
-
-def parse(fake_data):
-    lines = fake_data.split("")
-
-
-class StackTest(RuleBasedStateMachine):
-    def __init__(self):
-        super().__init__()
-
-    database = Stack(None)
-    compared_database = []
-    values = Bundle("values")
-
-    @rule(target=values, v=st.integers())
-    def add_value(self, v):
-        return v
-
-    @rule(v=values)
-    def put_to_database(self, v):
-        self.database.put(v)
-        self.compared_database.append(v)
-
-    @rule()
-    def pop_from_database(self):
-        if len(self.compared_database) > 1:
-            self.database.pop()
-            del self.compared_database[-1]
-
-    @invariant()
-    def compare(self):
-        if len(self.compared_database) != 0:
-            assert self.compared_database[-1] == self.database.head.value
+    return PerformedCommandStorage(storage=storage, history=deque())
 
 
 class TestCommandStorage:
@@ -66,7 +32,7 @@ class TestActionInsertFirst:
     )
     def test_do(self, storage, value, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionInsertFirst(cmd_storage.storage, value))
+        cmd_storage.apply(action=ActionInsertFirst(value))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -75,8 +41,8 @@ class TestActionInsertFirst:
     )
     def test_undo(self, storage, value_1, value_2, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionInsertFirst(cmd_storage.storage, value_1))
-        cmd_storage.apply(action=ActionInsertFirst(cmd_storage.storage, value_2))
+        cmd_storage.apply(action=ActionInsertFirst(value_1))
+        cmd_storage.apply(action=ActionInsertFirst(value_2))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -85,7 +51,7 @@ class TestActionInsertFirst:
     def test_err_not_int(self, storage, value):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(TypeError):
-            cmd_storage.apply(ActionInsertFirst(cmd_storage.storage, value))
+            cmd_storage.apply(ActionInsertFirst(value))
 
 
 class TestActionInsertLast:
@@ -95,7 +61,7 @@ class TestActionInsertLast:
     )
     def test_do(self, storage, value, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionInsertLast(cmd_storage.storage, value))
+        cmd_storage.apply(action=ActionInsertLast(value))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -104,8 +70,8 @@ class TestActionInsertLast:
     )
     def test_undo(self, storage, value_1, value_2, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionInsertLast(cmd_storage.storage, value_1))
-        cmd_storage.apply(action=ActionInsertLast(cmd_storage.storage, value_2))
+        cmd_storage.apply(action=ActionInsertLast(value_1))
+        cmd_storage.apply(action=ActionInsertLast(value_2))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -114,7 +80,7 @@ class TestActionInsertLast:
     def test_err_not_int(self, storage, value):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(TypeError):
-            cmd_storage.apply(ActionInsertFirst(cmd_storage.storage, value))
+            cmd_storage.apply(ActionInsertFirst(value))
 
 
 class TestActionSwap:
@@ -124,7 +90,7 @@ class TestActionSwap:
     )
     def test_do(self, storage, first_index, second_index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionSwap(cmd_storage.storage, first_index, second_index))
+        cmd_storage.apply(action=ActionSwap(first_index, second_index))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -133,8 +99,8 @@ class TestActionSwap:
     )
     def test_undo(self, storage, first_index, second_index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionSwap(cmd_storage.storage, first_index, second_index))
-        cmd_storage.apply(action=ActionSwap(cmd_storage.storage, first_index + 1, second_index + 1))
+        cmd_storage.apply(action=ActionSwap(first_index, second_index))
+        cmd_storage.apply(action=ActionSwap(first_index + 1, second_index + 1))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -143,7 +109,7 @@ class TestActionSwap:
     def test_err_no_index(self, storage, first_index, second_index):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionSwap(cmd_storage.storage, first_index, second_index))
+            cmd_storage.apply(ActionSwap(first_index, second_index))
 
 
 class TestActionAdd:
@@ -153,7 +119,7 @@ class TestActionAdd:
     )
     def test_do(self, storage, index, value, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionAdd(cmd_storage.storage, index, value))
+        cmd_storage.apply(action=ActionAdd(index, value))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -162,8 +128,8 @@ class TestActionAdd:
     )
     def test_undo(self, storage, index, value, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionAdd(cmd_storage.storage, index, value))
-        cmd_storage.apply(action=ActionAdd(cmd_storage.storage, index, value))
+        cmd_storage.apply(action=ActionAdd(index, value))
+        cmd_storage.apply(action=ActionAdd(index, value))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -172,7 +138,7 @@ class TestActionAdd:
     def test_err_no_index(self, storage, index, value):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionAdd(cmd_storage.storage, index, value))
+            cmd_storage.apply(ActionAdd(index, value))
 
 
 class TestActionFlip:
@@ -182,7 +148,7 @@ class TestActionFlip:
     )
     def test_do(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionFlip(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionFlip(index))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -191,8 +157,8 @@ class TestActionFlip:
     )
     def test_undo(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionFlip(cmd_storage.storage, index))
-        cmd_storage.apply(action=ActionFlip(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionFlip(index))
+        cmd_storage.apply(action=ActionFlip(index))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -201,7 +167,7 @@ class TestActionFlip:
     def test_err_no_index(self, storage, index):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionFlip(cmd_storage.storage, index))
+            cmd_storage.apply(ActionFlip(index))
 
 
 class TestActionSquare:
@@ -211,7 +177,7 @@ class TestActionSquare:
     )
     def test_do(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionSquare(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionSquare(index))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -220,8 +186,8 @@ class TestActionSquare:
     )
     def test_undo(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionSquare(cmd_storage.storage, index))
-        cmd_storage.apply(action=ActionSquare(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionSquare(index))
+        cmd_storage.apply(action=ActionSquare(index))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -230,7 +196,7 @@ class TestActionSquare:
     def test_err_no_index(self, storage, index):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionSquare(cmd_storage.storage, index))
+            cmd_storage.apply(ActionSquare(index))
 
 
 class TestActionDeleteSlice:
@@ -240,7 +206,7 @@ class TestActionDeleteSlice:
     )
     def test_do(self, storage, first_index, second_index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionDeleteSlice(cmd_storage.storage, first_index, second_index))
+        cmd_storage.apply(action=ActionDeleteSlice(first_index, second_index))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -249,7 +215,7 @@ class TestActionDeleteSlice:
     )
     def test_undo(self, storage, first_index, second_index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionDeleteSlice(cmd_storage.storage, first_index, second_index))
+        cmd_storage.apply(action=ActionDeleteSlice(first_index, second_index))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -258,7 +224,7 @@ class TestActionDeleteSlice:
     def test_err_no_index(self, storage, first_index, second_index):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionDeleteSlice(cmd_storage.storage, first_index, second_index))
+            cmd_storage.apply(ActionDeleteSlice(first_index, second_index))
 
 
 class TestActionPop:
@@ -268,7 +234,7 @@ class TestActionPop:
     )
     def test_do(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionPop(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionPop(index))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -277,7 +243,7 @@ class TestActionPop:
     )
     def test_undo(self, storage, index, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionPop(cmd_storage.storage, index))
+        cmd_storage.apply(action=ActionPop(index))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -286,7 +252,7 @@ class TestActionPop:
     def test_err_no_index(self, storage, index):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionSquare(cmd_storage.storage, index))
+            cmd_storage.apply(ActionSquare(index))
 
 
 class TestActionMove:
@@ -296,7 +262,7 @@ class TestActionMove:
     )
     def test_do(self, storage, step, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionMove(cmd_storage.storage, step))
+        cmd_storage.apply(action=ActionMove(step))
         assert cmd_storage.storage == expected
 
     @pytest.mark.parametrize(
@@ -305,8 +271,8 @@ class TestActionMove:
     )
     def test_undo(self, storage, step, expected):
         cmd_storage = create_test_cmd_storage(storage)
-        cmd_storage.apply(action=ActionMove(cmd_storage.storage, step))
-        cmd_storage.apply(action=ActionMove(cmd_storage.storage, step))
+        cmd_storage.apply(action=ActionMove(step))
+        cmd_storage.apply(action=ActionMove(step))
         cmd_storage.undo()
 
         assert cmd_storage.storage == expected
@@ -315,7 +281,7 @@ class TestActionMove:
     def test_err_no_index(self, storage, step):
         cmd_storage = create_test_cmd_storage(storage)
         with pytest.raises(IndexError):
-            cmd_storage.apply(ActionSquare(cmd_storage.storage, step))
+            cmd_storage.apply(ActionSquare(step))
 
 
 def get_output(string: str):
@@ -372,6 +338,3 @@ def test_main_scenario_err(actions, expected_err, monkeypatch, capsys):
     captured = capsys.readouterr().out
 
     assert captured.split("\n")[-2] == expected_err
-
-
-StackTestCase = StackTest.TestCase
