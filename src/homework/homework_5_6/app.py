@@ -1,13 +1,13 @@
 from tkinter import Tk
 
-from src.homework.homework_5_6.model import TicTacToeModel
+from src.homework.homework_5_6.model import Player, TicTacToeModel
 from src.homework.homework_5_6.viewmodel import ViewModel
 
 
 class App:
     def __init__(self) -> None:
         self._root = self.setup_root()
-        self._model = TicTacToeModel(None, None)
+        self._model = TicTacToeModel(Player(-1), Player(-1))
         self._viewmodel = ViewModel(self._root, self._model)
 
     def setup_root(self) -> Tk:

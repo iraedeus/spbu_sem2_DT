@@ -1,11 +1,10 @@
 from typing import Any, Callable, Generic, Optional, TypeVar
 
-T = TypeVar("T")
-T2ANY_CALLABLE = Callable[[T], Any]
+T2ANY_CALLABLE = Callable
 
 
-class Observable(Generic[T]):
-    def __init__(self, initial: Optional[T] = None) -> None:
+class Observable:
+    def __init__(self, initial: int) -> None:
         self._value = initial
         self.callbacks: list[T2ANY_CALLABLE] = []
 
@@ -17,17 +16,17 @@ class Observable(Generic[T]):
             func(self.value)
 
     @property
-    def value(self) -> Optional[T]:
+    def value(self) -> int:
         return self._value
 
     @value.setter
-    def value(self, new_value: T) -> None:
+    def value(self, new_value: int) -> None:
         self._value = new_value
         self._do_callbacks()
 
     @value.deleter
     def value(self) -> None:
-        self._value = None
+        self._value = -1
         self._do_callbacks()
 
     def __eq__(self, other: object) -> bool:

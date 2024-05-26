@@ -18,9 +18,13 @@ class MainMenuView(ttk.Frame):
 class MultiplayerMenuView(ttk.Frame):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
+        self.label = ttk.Label(self, text="Enter ip of server:")
+        self.label.pack()
         self.ip_entry = ttk.Entry(self)
-        self.ip_entry.insert(END, "Enter ip of server")
+        self.ip_entry.insert(END, "")
         self.ip_entry.pack()
+        self.enter_btn = ttk.Button(self, text="Enter")
+        self.enter_btn.pack(pady=5)
 
 
 class ChoiceView(ttk.Frame):
