@@ -87,7 +87,7 @@ class TestORM:
 
     @pytest.mark.parametrize(
         "asdict_obj, key, expected",
-        [({"name": "amogus", "login": "lays", "excess": True}, "excess", True)],
+        [({"name": "amogus", "login": "lays", "is_authorized": True, "excess": True}, "excess", True)],
     )
     def test_not_strict_from_dict(self, asdict_obj, key, expected):
         obj = create_obj(TestFirst, asdict_obj)

@@ -19,7 +19,7 @@ class Descriptor(object):
 
     def __get__(self, instance: T, owner: Type[T]) -> Optional[Any]:
         if not hasattr(instance, "dict"):
-            raise AttributeError
+            raise AttributeError("The object does not have a dict")
 
         attr_name = self._label
         if attr_name not in instance.dict.keys():
@@ -32,7 +32,7 @@ class Descriptor(object):
 
         if value:
             return value
-        elif value is None and attr_name in instance.dict.keys():
+        elif attr_name in instance.dict.keys():
             new_value = instance.dict[attr_name]
             if isinstance(new_value, dict):
                 sub_cls = instance.__annotations__[self._label]
@@ -47,8 +47,6 @@ class Descriptor(object):
             else:
                 setattr(instance, attr_name, new_value)
                 return instance.__dict__[attr_name]
-        else:
-            return value
 
 
 class ORM:
@@ -82,9 +80,12 @@ class ORM:
                     "The data from the JSON file does not match the expected structure in strict mode."
                 )
         else:
-            iter_attrs = list(set().union(datacls_attrs, actual_attrs))
-            for name in iter_attrs:
-                setattr(cls, name, Descriptor(name))
+            is_compatible = all([attr in actual_attrs for attr in datacls_attrs])
+            if is_compatible:
+                for name in actual_attrs:
+                    setattr(cls, name, Descriptor(name))
+            else:
+                raise IncompatibleData("Not all attributes from the dataclass are found in the JSON file")
 
 
 if __name__ == "__main__":
