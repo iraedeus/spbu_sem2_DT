@@ -7,22 +7,20 @@ from src.homework.homework_4.merge_sort import *
 @settings(max_examples=1000)
 @given(arr=st.lists(st.integers()), threads_cnt=st.integers(min_value=2, max_value=32))
 def test_threading_merge(arr, threads_cnt):
-    assert list(sorted(arr)) == parallel_merge_sort(arr, threads_cnt)
-    assert parallel_merge_sort(arr, threads_cnt) == parallel_merge_sort(
-        parallel_merge_sort(arr, threads_cnt), threads_cnt
-    )
+    assert list(sorted(arr)) == merge_sort(arr, threads_cnt)
+    assert merge_sort(arr, threads_cnt) == merge_sort(merge_sort(arr, threads_cnt), threads_cnt)
 
 
 @settings(max_examples=1000)
 @given(arr=st.lists(st.integers()), threads_cnt=st.integers(min_value=2, max_value=4))
 def test_multiprocess_merge(arr, threads_cnt):
-    assert list(sorted(arr)) == parallel_merge_sort(arr, 4, True)
+    assert list(sorted(arr)) == merge_sort(arr, 4, True)
 
 
 @settings(max_examples=1000)
 @given(arr=st.lists(st.integers()))
 def test_merge(arr):
-    assert list(sorted(arr)) == recursive_merge_sort(arr)
+    assert list(sorted(arr)) == merge_sort(arr, 0)
 
 
 @settings(max_examples=1000)

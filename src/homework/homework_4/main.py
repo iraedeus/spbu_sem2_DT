@@ -2,7 +2,7 @@ import argparse
 import copy
 import random
 import time
-from typing import Any, Callable
+from typing import Any
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -24,40 +24,19 @@ def parse_cmd() -> dict[str, Any]:
     return vars(args)
 
 
-def evaluate_time(func: Callable, args: list[Any], is_threading: bool) -> float:
-    if is_threading:
-        start = time.perf_counter()
-        func(*args)
-        end = time.perf_counter()
-    else:
-        start = time.perf_counter()
-        func(args[0])
-        end = time.perf_counter()
-
-    return end - start
-
-
-def check_time(func: Callable, input_data: dict[str, Any], is_threading: bool) -> ArrayLike:
-    output_time = np.array([])
-    num_of_tests = 3
-    size = input_data["arr_size"]
-    threads = input_data["thread_count"]
+def check_time(size: int, threads: list[int], num_of_tests: int, is_multiprocess: bool) -> ArrayLike:
+    output_time = []
     array = random.sample(range(-1000000, 1000000), size)
     for thread_cnt in threads:
         total_time = 0.0
         for j in range(num_of_tests):
             arr_copy = copy.copy(array)
-            args = [arr_copy, thread_cnt, input_data["multiprocess"]]
-
             start = time.perf_counter()
-            if is_threading:
-                func(*args)
-            else:
-                func(args[0])
+            merge_sort(arr_copy, thread_cnt, is_multiprocess)
             end = time.perf_counter()
             total_time += end - start
 
-        output_time = np.append(output_time, total_time / num_of_tests)
+        output_time.append(total_time / num_of_tests)
 
     return output_time
 
@@ -65,8 +44,10 @@ def check_time(func: Callable, input_data: dict[str, Any], is_threading: bool) -
 if __name__ == "__main__":
     input_data = parse_cmd()
     x_axis = np.array(input_data["thread_count"])
-    y_axis_threading = check_time(parallel_merge_sort, input_data, True)
-    y_axis_recursive = check_time(recursive_merge_sort, input_data, False)
+    y_axis_threading = check_time(input_data["arr_size"], input_data["thread_count"], 3, input_data["multiprocess"])
+    y_axis_recursive = check_time(
+        input_data["arr_size"], [0] * len(input_data["thread_count"]), 3, input_data["multiprocess"]
+    )
 
     plt.title(
         label=f"size: {input_data['arr_size']}, threads: {input_data['thread_count']}, multiprocess: {input_data['multiprocess']}"
