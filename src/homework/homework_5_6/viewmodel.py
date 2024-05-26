@@ -62,20 +62,20 @@ class ChoiceViewModel(IViewModel):
     def choice(self, view_model: ViewModel, side: str, data: dict[str, Any]) -> None:
         if data["challenge"]:
             if side == "circle":
-                hard_human = (HardBot(1, self._model), Human(2))
+                hard_human = (HardBot(1), Human(2))
                 self._model.players = hard_human
                 self._model.current_player = hard_human[0]
             elif side == "cross":
-                human_hard = (Human(1), HardBot(2, self._model))
+                human_hard = (Human(1), HardBot(2))
                 self._model.players = human_hard
                 self._model.current_player = human_hard[0]
         else:
             if side == "circle":
-                easy_human = (EasyBot(1, self._model), Human(2))
+                easy_human = (EasyBot(1), Human(2))
                 self._model.players = easy_human
                 self._model.current_player = easy_human[0]
             elif side == "cross":
-                human_easy = (Human(1), EasyBot(2, self._model))
+                human_easy = (Human(1), EasyBot(2))
                 self._model.players = human_easy
                 self._model.current_player = human_easy[0]
 
@@ -145,10 +145,10 @@ class FieldViewModel(IViewModel):
         def bot_turn() -> None:
             if isinstance(self._model.current_player, EasyBot):
                 easy_bot = self._model.current_player
-                easy_bot.bot_turn()
+                easy_bot.turn(self._model)
             elif isinstance(self._model.current_player, HardBot):
                 hard_bot = self._model.current_player
-                hard_bot.bot_turn()
+                hard_bot.turn(self._model)
 
         def next_turn(r: int, c: int) -> None:
             if self._model.field[r][c].value == 0:

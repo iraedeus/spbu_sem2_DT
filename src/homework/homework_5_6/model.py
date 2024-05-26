@@ -1,6 +1,7 @@
 import copy
 import math
 import random
+from abc import abstractmethod
 from typing import Any
 
 from src.homework.homework_5_6.observer import Observable
@@ -10,32 +11,31 @@ class Player:
     def __init__(self, id: int) -> None:
         self.id = id
 
+    def turn(self, model: "TicTacToeModel") -> None:
+        pass
+
 
 class EasyBot(Player):
-    def __init__(self, id: int, model: "TicTacToeModel") -> None:
+    def __init__(self, id: int) -> None:
         super().__init__(id)
-        self._model = model
 
-    def bot_turn(self) -> None:
-        field = self._model.field
+    def turn(self, model: "TicTacToeModel") -> None:
+        field = model.field
         while True:
             random_x = random.randint(0, 2)
             random_y = random.randint(0, 2)
             if field[random_x][random_y].value != 0:
                 continue
             else:
-                self._model.place(random_x, random_y)
+                model.place(random_x, random_y)
                 break
 
 
 class HardBot(Player):
-    def __init__(self, id: int, model: "TicTacToeModel") -> None:
+    def __init__(self, id: int) -> None:
         super().__init__(id)
-        self._model = model
 
-    def minimax(self, field: list[list[int]]) -> tuple:
-        model = self._model
-
+    def minimax(self, model: "TicTacToeModel", field: list[list[int]]) -> tuple:
         def get_indexes_of_possible_turns(field: list[list[int]]) -> list[list]:
             possible_turns_indexes = []
             for r in range(3):
@@ -83,13 +83,13 @@ class HardBot(Player):
 
         return get_best(possible_turns)
 
-    def bot_turn(self) -> None:
-        field = self._model.get_copy_of_field()
-        current_player = self._model.current_player
+    def turn(self, model: "TicTacToeModel") -> None:
+        field = model.get_copy_of_field()
+        current_player = model.current_player
         list_field = [[field[r][c] for c in range(3)] for r in range(3)]
-        r, c = self.minimax(list_field)
-        self._model.current_player = current_player
-        self._model.place(r, c)
+        r, c = self.minimax(model, list_field)
+        model.current_player = current_player
+        model.place(r, c)
 
 
 class Human(Player):
