@@ -73,7 +73,7 @@ class ChoiceViewModel(IViewModel):
                 self._model.players = players
                 self._model.current_player = players[0]
 
-        view_model.swap("field", {})
+        view_model.swap("field", data)
 
     def _bind(self, view: ChoiceView, view_model: ViewModel, data: dict[str, Any]) -> None:
         view.circle_btn.config(command=lambda: self.choice(view_model, "circle", data))
@@ -100,7 +100,7 @@ class FieldViewModel(IViewModel):
     def __init__(self, model: TicTacToeModel) -> None:
         super().__init__(model)
 
-    def _bind(self, view: FieldView, view_model: ViewModel) -> None:
+    def _bind_two_player(self, view: FieldView, view_model: ViewModel) -> None:
         if self._model.players[0] is None:
             self._model.players = (Human(1), Human(2))
             self._model.current_player = self._model.players[0]
@@ -127,10 +127,49 @@ class FieldViewModel(IViewModel):
                 next_turn = lambda row=r, column=c: self._model.place(row, column)
                 button.config(command=next_turn)
 
+    def _bind_with_computer(self, view: FieldView, view_model: ViewModel) -> None:
+        def put_sign(view: FieldView, value: int, r: int, c: int) -> None:
+            button = view.cells[r][c]
+
+            if value == 1:
+                button.config(text="\nX\n\n")
+            if value == 2:
+                button.config(text="\nO\n\n")
+
+        def next_turn(r: int, c: int):
+            if self._model.field[r][c].value == 0:
+                self._model.place(r, c)
+                if isinstance(self._model.current_player, EasyBot):
+                    self._model.easy_bot_turn()
+                elif isinstance(self._model.current_player, HardBot):
+                    self._model.hard_bot_turn()
+
+        session_observer = self._model.session
+        session_observer.add_callback(lambda _: view_model.swap("gameresult", {}))
+
+        buttons = view.cells
+        for r in range(3):
+            for c in range(3):
+                button = buttons[r][c]
+                observer = self._model.field[r][c]
+                add_sign = lambda value, row=r, column=c: put_sign(view, value, row, column)
+                observer.add_callback(add_sign)
+
+                do_next_turn = lambda row=r, column=c: next_turn(row, column)
+                button.config(command=do_next_turn)
+
+        if isinstance(self._model.current_player, EasyBot):
+            self._model.easy_bot_turn()
+        elif isinstance(self._model.current_player, HardBot):
+            self._model.hard_bot_turn()
+
+    def _bind_multiplayer(self, view: FieldView, view_model: ViewModel) -> None:
+        pass
+
     def start(self, root: Tk, view_model: ViewModel, data: dict[str, Any]) -> FieldView:
         frame = FieldView(root)
         frame.grid(row=1, column=1)
-        self._bind(frame, view_model)
+        self._bind_with_computer(frame, view_model)
         return frame
 
 
