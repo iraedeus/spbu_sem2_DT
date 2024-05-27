@@ -86,6 +86,17 @@ class TestORM:
         assert nested_obj.__dict__ == expected
 
     @pytest.mark.parametrize(
+        "asdict_obj",
+        [({"name": "smh", "game": {"ggwp": True, "csgo": "yes"}})],
+    )
+    def test_is_nested_obj_valid(self, asdict_obj):
+        obj = create_obj(TestSecond, asdict_obj)
+        nested_obj = getattr(obj, "game")
+        assert isinstance(nested_obj, TestNested)
+        assert nested_obj.ggwp
+        assert nested_obj.csgo == "yes"
+
+    @pytest.mark.parametrize(
         "asdict_obj, key, expected",
         [({"name": "amogus", "login": "lays", "is_authorized": True, "excess": True}, "excess", True)],
     )
