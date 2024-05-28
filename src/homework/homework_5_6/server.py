@@ -1,32 +1,30 @@
-import socket
 import random
+import socket
 from threading import Thread
 
 from loguru import logger
 
 
 class Server:
-    def __init__(self, current_port: str, first_port: str, second_port: str):
+    def __init__(self, current_port: str, first_port: str, second_port: str) -> None:
         self.current_port = current_port
         self.first_port = first_port
         self.second_port = second_port
 
-    def give_response(self, players: list[tuple[socket.socket, str]], data):
-        def swap_ports():
+    def give_response(self, players: list[tuple[socket.socket, str]], data: bytes) -> None:
+        def swap_ports() -> None:
             if self.current_port == self.first_port:
                 self.current_port = self.second_port
             else:
                 self.current_port = self.first_port
 
-        received_port = int(str(data)[2:len(str(data))-1].split(" ")[-1])
+        received_port = int(str(data)[2 : len(str(data)) - 1].split(" ")[-1])
         if received_port == self.current_port:
-            print(received_port)
             for player in players:
                 player[0].sendall(data)
             swap_ports()
 
-
-    def get_row_column(self, conn: socket.socket, addr: str, all_players: list[tuple[socket.socket, str]]):
+    def get_row_column(self, conn: socket.socket, addr: str, all_players: list[tuple[socket.socket, str]]) -> None:
         while True:
             data = conn.recv(1024)
             if data:
@@ -37,7 +35,7 @@ class Server:
                 break
 
 
-def main(ip: str, port: int):
+def main(ip: str, port: int) -> None:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEPORT, 1)
     sock.bind((ip, port))

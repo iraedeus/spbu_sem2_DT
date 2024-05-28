@@ -85,7 +85,7 @@ class MultiplayerMenuViewModel(IViewModel):
         super().__init__(model)
 
     def start(self, root: Tk, view_model: ViewModel, data: dict[str, Any]) -> MultiplayerMenuView:
-        def get_ip_and_swap_view(view: MultiplayerMenuView, data: dict[str, Any]):
+        def get_ip_and_swap_view(view: MultiplayerMenuView, data: dict[str, Any]) -> None:
             data["ip"] = view.ip_entry.get()
             view_model.swap("field", data)
 
@@ -186,13 +186,13 @@ class FieldViewModel(IViewModel):
         self._model.players = (Human(1), Human(2))
         self._model.current_player = self._model.players[0]
 
-        def your_turn(sock: socket.socket, r: int, c: int):
+        def your_turn(sock: socket.socket, r: int, c: int) -> None:
             sock.sendall(bytes(f"{r} {c} {sock.getsockname()[-1]}", encoding="UTF-8"))
 
-        def get_response_from_server(sock: socket.socket):
+        def get_response_from_server(sock: socket.socket) -> None:
             while True:
                 data = sock.recv(1024)
-                rc = str(data)[2:len(str(data))-1].split(" ")
+                rc = str(data)[2 : len(str(data)) - 1].split(" ")
                 r, c = int(rc[0]), int(rc[1])
                 if data:
                     self._model.current_player.turn(r, c)
@@ -210,7 +210,6 @@ class FieldViewModel(IViewModel):
 
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.connect((ip, 55555))
-        print(sock.getsockname())
         player_thread = Thread(target=get_response_from_server, args=(sock,))
         player_thread.start()
 
