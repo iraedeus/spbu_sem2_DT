@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
-from typing import Any, TypeVar, Union, Protocol
+from typing import Any, Protocol, TypeVar, Union
 
 
 class Comparable(Protocol):
@@ -59,7 +59,9 @@ def get_subarrs(arr: list[CT], threads_cnt: int) -> list[list[CT]]:
     return [arr[i : i + size] for i in range(0, len(arr), size)]
 
 
-def executor_work(executor: Union[ThreadPoolExecutor, ProcessPoolExecutor], subarrs: list[list[CT]], output: list[CT]) -> list[CT]:
+def executor_work(
+    executor: Union[ThreadPoolExecutor, ProcessPoolExecutor], subarrs: list[list[CT]], output: list[CT]
+) -> list[CT]:
     sorted_subarrs: list = [executor.submit(recursive_merge_sort, subarr) for subarr in subarrs]
     for sorted_subarr in as_completed(sorted_subarrs):
         output = merge_two_sorted_lists(output, sorted_subarr.result())
