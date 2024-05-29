@@ -32,7 +32,7 @@ def check_time(size: int, threads: list[int], num_of_tests: int, is_multiprocess
         for j in range(num_of_tests):
             arr_copy = copy.copy(array)
             start = time.perf_counter()
-            merge_sort(arr_copy, thread_cnt, is_multiprocess)
+            second_merge_sort(arr_copy, thread_cnt, is_multiprocess)
             end = time.perf_counter()
             total_time += end - start
 

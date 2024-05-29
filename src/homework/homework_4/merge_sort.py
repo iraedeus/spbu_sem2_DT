@@ -1,5 +1,5 @@
 from abc import ABCMeta, abstractmethod
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor, as_completed
+from concurrent.futures import Future, ProcessPoolExecutor, ThreadPoolExecutor, as_completed
 from typing import Any, Protocol, TypeVar, Union
 
 
@@ -50,6 +50,37 @@ def recursive_merge_sort(arr: list[CT]) -> list[CT]:
     return merge_two_sorted_lists(left_half, right_half)
 
 
+def threading_recursive_merge_sort(arr: list[CT], threads_cnt: int, multiprocess: bool) -> list[CT]:
+    if len(arr) <= 1:
+        return arr
+
+    mid = len(arr) // 2
+    left_half = arr[:mid]
+    right_half = arr[mid:]
+
+    sublist_1: Union[Future, list[CT]]
+    sublist_2: Union[Future, list[CT]]
+
+    if threads_cnt == 2:
+        if multiprocess:
+            with ThreadPoolExecutor(max_workers=2) as executor:
+                sublist_1 = executor.submit(recursive_merge_sort, left_half)
+                sublist_2 = executor.submit(recursive_merge_sort, right_half)
+                return merge_two_sorted_lists(sublist_1.result(), sublist_2.result())
+        else:
+            with ProcessPoolExecutor(max_workers=2) as executor:
+                sublist_1 = executor.submit(recursive_merge_sort, left_half)
+                sublist_2 = executor.submit(recursive_merge_sort, right_half)
+                return merge_two_sorted_lists(sublist_1.result(), sublist_2.result())
+
+    elif threads_cnt > 2:
+        sublist_1 = threading_recursive_merge_sort(left_half, threads_cnt // 2, multiprocess)
+        sublist_2 = threading_recursive_merge_sort(right_half, threads_cnt // 2, multiprocess)
+        return merge_two_sorted_lists(sublist_1, sublist_2)
+    else:
+        return merge_two_sorted_lists(recursive_merge_sort(left_half), recursive_merge_sort(right_half))
+
+
 def get_subarrs(arr: list[CT], threads_cnt: int) -> list[list[CT]]:
     if threads_cnt > len(arr):
         size = 1
@@ -80,11 +111,20 @@ def multiprocess_merge_sort(arr: list[CT], threads_cnt: int) -> list[CT]:
         return executor_work(executor, subarrs, [])
 
 
-def merge_sort(arr: list[CT], threads_cnt: int, multiprocess: bool = False) -> list[CT]:
+def first_merge_sort(arr: list[CT], threads_cnt: int, multiprocess: bool = False) -> list[CT]:
     if multiprocess and threads_cnt > 0:
         output = multiprocess_merge_sort(arr, threads_cnt)
     elif threads_cnt > 0:
         output = thread_merge_sort(arr, threads_cnt)
+    else:
+        output = recursive_merge_sort(arr)
+
+    return output
+
+
+def second_merge_sort(arr: list[CT], threads_cnt: int, multiprocess: bool = False) -> list[CT]:
+    if multiprocess and threads_cnt > 0:
+        output = threading_recursive_merge_sort(arr, threads_cnt, multiprocess)
     else:
         output = recursive_merge_sort(arr)
 
