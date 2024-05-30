@@ -7,7 +7,7 @@ from typing import Any
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
-from merge_sort import *
+from merge_sort import second_merge_sort
 from numpy.typing import ArrayLike
 
 matplotlib.use("TkAgg")
