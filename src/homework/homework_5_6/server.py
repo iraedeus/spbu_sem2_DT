@@ -13,10 +13,7 @@ class Server:
 
     def give_response(self, players: list[tuple[socket.socket, str]], data: bytes) -> None:
         def swap_ports() -> None:
-            if self.current_port == self.first_port:
-                self.current_port = self.second_port
-            else:
-                self.current_port = self.first_port
+            self.current_port = self.second_port if self.current_port == self.first_port else self.first_port
 
         received_port = int(str(data)[2 : len(str(data)) - 1].split(" ")[-1])
         if received_port == self.current_port:

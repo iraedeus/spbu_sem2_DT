@@ -1,6 +1,7 @@
 import socket
 from threading import Thread
 from tkinter import Tk
+
 from src.homework.homework_5_6.model import *
 from src.homework.homework_5_6.view import *
 
@@ -183,8 +184,7 @@ class FieldViewModel(IViewModel):
         bot_turn()
 
     def _bind_multiplayer(self, view: FieldView, ip: str, view_model: ViewModel) -> None:
-        self._model.players = (Human(1), Human(2))
-        self._model.current_player = self._model.players[0]
+        self._model.start_two_players()
 
         def your_turn(sock: socket.socket, r: int, c: int) -> None:
             sock.sendall(bytes(f"{r} {c} {sock.getsockname()[-1]}", encoding="UTF-8"))
@@ -195,7 +195,10 @@ class FieldViewModel(IViewModel):
                 rc = str(data)[2 : len(str(data)) - 1].split(" ")
                 r, c = int(rc[0]), int(rc[1])
                 if data:
-                    self._model.current_player.turn(r, c)
+                    if isinstance(self._model.current_player, Human):
+                        self._model.current_player.turn(self._model.field, r, c)
+                        self._model.swap_players()
+                        self._model.end_game()
 
         def put_sign(view: FieldView, value: int, r: int, c: int) -> None:
             button = view.cells[r][c]
@@ -217,7 +220,7 @@ class FieldViewModel(IViewModel):
         for r in range(3):
             for c in range(3):
                 button = buttons[r][c]
-                observer = self._model.field[r][c]
+                observer = self._model.field.field[r][c]
                 add_sign = lambda value, row=r, column=c: put_sign(view, value, row, column)
                 observer.add_callback(add_sign)
 
