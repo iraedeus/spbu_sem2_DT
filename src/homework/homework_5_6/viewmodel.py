@@ -1,5 +1,6 @@
+import socket
+from threading import Thread
 from tkinter import Tk
-from typing import Optional
 
 from src.homework.homework_5_6.model import *
 from src.homework.homework_5_6.view import *
@@ -46,7 +47,9 @@ class MainMenuViewModel(IViewModel):
         view.on_computer_btn.config(command=lambda: view_model.swap("field", {"bot": False, "multiplayer": False}))
         view.easy_bot_btn.config(command=lambda: view_model.swap("choice", {"challenge": False, "bot": True}))
         view.hard_bot_btn.config(command=lambda: view_model.swap("choice", {"challenge": True, "bot": True}))
-        view.online_btn.config(command=lambda: view_model.swap("multi", {"bot": False, "multiplayer": True}))
+        view.online_btn.config(
+            command=lambda: view_model.swap("multi", {"bot": False, "multiplayer": True, "ip": None})
+        )
 
     def start(self, root: Tk, view_model: ViewModel, data: dict[str, Any]) -> MainMenuView:
         frame = MainMenuView(root)
@@ -83,8 +86,15 @@ class MultiplayerMenuViewModel(IViewModel):
         super().__init__(model)
 
     def start(self, root: Tk, view_model: ViewModel, data: dict[str, Any]) -> MultiplayerMenuView:
+        def get_ip_and_swap_view(view: MultiplayerMenuView, data: dict[str, Any]) -> None:
+            data["ip"] = view.ip_entry.get()
+            view_model.swap("field", data)
+
         frame = MultiplayerMenuView(root)
         frame.grid(row=1, column=1)
+
+        frame.enter_btn.config(command=lambda: get_ip_and_swap_view(frame, data))
+
         return frame
 
 
@@ -173,8 +183,49 @@ class FieldViewModel(IViewModel):
 
         bot_turn()
 
-    def _bind_multiplayer(self, view: FieldView, view_model: ViewModel) -> None:
-        pass
+    def _bind_multiplayer(self, view: FieldView, ip: str, view_model: ViewModel) -> None:
+        self._model.start_two_players()
+
+        def your_turn(sock: socket.socket, r: int, c: int) -> None:
+            sock.sendall(bytes(f"{r} {c} {sock.getsockname()[-1]}", encoding="UTF-8"))
+
+        def get_response_from_server(sock: socket.socket) -> None:
+            while True:
+                data = sock.recv(1024)
+                rc = str(data)[2 : len(str(data)) - 1].split(" ")
+                r, c = int(rc[0]), int(rc[1])
+                if data:
+                    if isinstance(self._model.current_player, Human):
+                        self._model.current_player.turn(self._model.field, r, c)
+                        self._model.swap_players()
+                        self._model.end_game()
+
+        def put_sign(view: FieldView, value: int, r: int, c: int) -> None:
+            button = view.cells[r][c]
+
+            if value == 1:
+                button.config(text="\nX\n\n")
+            if value == 2:
+                button.config(text="\nO\n\n")
+
+        session_observer = self._model.session
+        session_observer.add_callback(lambda _: view_model.swap("gameresult", {}))
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect((ip, 55555))
+        player_thread = Thread(target=get_response_from_server, args=(sock,))
+        player_thread.start()
+
+        buttons = view.cells
+        for r in range(3):
+            for c in range(3):
+                button = buttons[r][c]
+                observer = self._model.field.field[r][c]
+                add_sign = lambda value, row=r, column=c: put_sign(view, value, row, column)
+                observer.add_callback(add_sign)
+
+                do_next_turn = lambda row=r, column=c: your_turn(sock, row, column)
+                button.config(command=do_next_turn)
 
     def start(self, root: Tk, view_model: ViewModel, data: dict[str, Any]) -> FieldView:
         frame = FieldView(root)
@@ -182,7 +233,7 @@ class FieldViewModel(IViewModel):
         if data["bot"]:
             self._bind_with_computer(frame, view_model)
         elif data["multiplayer"]:
-            self._bind_multiplayer(frame, view_model)
+            self._bind_multiplayer(frame, data["ip"], view_model)
         else:
             self._bind_two_player(frame, view_model)
         return frame
