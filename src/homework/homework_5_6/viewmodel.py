@@ -1,4 +1,4 @@
-from tkinter import Frame, Tk, ttk
+from tkinter import Tk
 from typing import Optional
 
 from src.homework.homework_5_6.model import *
@@ -61,23 +61,9 @@ class ChoiceViewModel(IViewModel):
 
     def choice(self, view_model: ViewModel, side: str, data: dict[str, Any]) -> None:
         if data["challenge"]:
-            if side == "circle":
-                hard_human = (HardBot(1), Human(2))
-                self._model.players = hard_human
-                self._model.current_player = hard_human[0]
-            elif side == "cross":
-                human_hard = (Human(1), HardBot(2))
-                self._model.players = human_hard
-                self._model.current_player = human_hard[0]
+            self._model.start_hard_bot_game(side)
         else:
-            if side == "circle":
-                easy_human = (EasyBot(1), Human(2))
-                self._model.players = easy_human
-                self._model.current_player = easy_human[0]
-            elif side == "cross":
-                human_easy = (Human(1), EasyBot(2))
-                self._model.players = human_easy
-                self._model.current_player = human_easy[0]
+            self._model.start_easy_bot_game(side)
 
         view_model.swap("field", data)
 
@@ -107,9 +93,7 @@ class FieldViewModel(IViewModel):
         super().__init__(model)
 
     def _bind_two_player(self, view: FieldView, view_model: ViewModel) -> None:
-        if isinstance(self._model.players[0], Player):
-            self._model.players = (Human(1), Human(2))
-            self._model.current_player = self._model.players[0]
+        self._model.start_two_players()
 
         def put_sign(view: FieldView, value: int, r: int, c: int) -> None:
             button = view.cells[r][c]
@@ -119,6 +103,13 @@ class FieldViewModel(IViewModel):
             if value == 2:
                 button.config(text="\nO\n\n")
 
+        def human_turn(r: int, c: int) -> None:
+            if isinstance(self._model.current_player, Human) and self._model.field.get(r, c) == 0:
+                human = self._model.current_player
+                human.turn(self._model.field, r, c)
+                self._model.swap_players()
+                self._model.end_game()
+
         session_observer = self._model.session
         session_observer.add_callback(lambda _: view_model.swap("gameresult", {}))
 
@@ -126,11 +117,11 @@ class FieldViewModel(IViewModel):
         for r in range(3):
             for c in range(3):
                 button = buttons[r][c]
-                observer = self._model.field[r][c]
+                observer = self._model.field.field[r][c]
                 add_sign = lambda value, row=r, column=c: put_sign(view, value, row, column)
                 observer.add_callback(add_sign)
 
-                do_next_turn = lambda row=r, column=c: self._model.place(row, column)
+                do_next_turn = lambda row=r, column=c: human_turn(row, column)
                 button.config(command=do_next_turn)
 
     def _bind_with_computer(self, view: FieldView, view_model: ViewModel) -> None:
@@ -145,14 +136,25 @@ class FieldViewModel(IViewModel):
         def bot_turn() -> None:
             if isinstance(self._model.current_player, EasyBot):
                 easy_bot = self._model.current_player
-                easy_bot.turn(self._model)
+                easy_bot.turn(self._model.field)
+                self._model.swap_players()
             elif isinstance(self._model.current_player, HardBot):
                 hard_bot = self._model.current_player
-                hard_bot.turn(self._model)
+                hard_bot.turn(self._model.field)
+                self._model.swap_players()
+
+            self._model.end_game()
+
+        def human_turn(r: int, c: int) -> None:
+            if isinstance(self._model.current_player, Human):
+                human = self._model.current_player
+                human.turn(self._model.field, r, c)
+                self._model.swap_players()
+                self._model.end_game()
 
         def next_turn(r: int, c: int) -> None:
-            if self._model.field[r][c].value == 0:
-                self._model.place(r, c)
+            if self._model.field.get(r, c) == 0:
+                human_turn(r, c)
                 bot_turn()
 
         session_observer = self._model.session
@@ -162,7 +164,7 @@ class FieldViewModel(IViewModel):
         for r in range(3):
             for c in range(3):
                 button = buttons[r][c]
-                observer = self._model.field[r][c]
+                observer = self._model.field.field[r][c]
                 add_sign = lambda value, row=r, column=c: put_sign(view, value, row, column)
                 observer.add_callback(add_sign)
 

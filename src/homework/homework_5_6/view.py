@@ -61,8 +61,6 @@ class GameResultView(ttk.Frame):
         self.to_menu_btn = ttk.Button(self, text="Return to main menu")
         self.to_menu_btn.pack()
 
-    pass
-
 
 if __name__ == "__main__":
     pass

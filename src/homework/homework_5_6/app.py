@@ -7,7 +7,7 @@ from src.homework.homework_5_6.viewmodel import ViewModel
 class App:
     def __init__(self) -> None:
         self._root = self.setup_root()
-        self._model = TicTacToeModel(Player(-1), Player(-1))
+        self._model = TicTacToeModel()
         self._viewmodel = ViewModel(self._root, self._model)
 
     def setup_root(self) -> Tk:

@@ -2,30 +2,32 @@ from src.homework.homework_5_6.model import *
 
 
 class TestEasyBot:
-    model = TicTacToeModel(HardBot(1), EasyBot(2))
+    model = TicTacToeModel()
+    model.players = (HardBot(1), EasyBot(2))
 
     def test_game(self):
         first_player = self.model.players[0]
         second_player = self.model.players[1]
         for i in range(4):
-            first_player.turn(self.model)
-            if self.model.is_field_full(self.model.get_copy_of_field()):
+            first_player.turn(self.model.field)
+            if self.model.field.is_field_full():
                 break
-            second_player.turn(self.model)
-            if self.model.is_field_full(self.model.get_copy_of_field()):
+            second_player.turn(self.model.field)
+            if self.model.field.is_field_full():
                 break
-        assert self.model.session.value == 1
+        assert self.model.field.check_if_player_won(1)
 
 
 class TestHardBot:
-    model = TicTacToeModel(HardBot(1), HardBot(2))
+    model = TicTacToeModel()
+    model.players = (HardBot(1), HardBot(2))
 
     def test_game(self):
         first_player = self.model.players[0]
         second_player = self.model.players[1]
         for i in range(4):
-            first_player.turn(self.model)
+            first_player.turn(self.model.field)
             if i == 3:
                 break
-            second_player.turn(self.model)
-        assert self.model.session.value == 0
+            second_player.turn(self.model.field)
+        assert not self.model.field.check_if_player_won(1) and not self.model.field.check_if_player_won(2)
