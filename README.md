@@ -8,7 +8,7 @@ git clone https://github.com/iraedeus/spbu_sem2_DT.git
 ## Homeworks
 
 1. - ``registry.py`` - the class registration system. You can register a class by name, and then use the same name to get it. For example:
-   ```commandline
+   ```python
     class ParentClass:
         pass
 
